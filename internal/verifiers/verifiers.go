@@ -5,7 +5,6 @@ package verifiers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/operantai/experiments-runtime-tool/internal/k8s"
@@ -39,7 +38,7 @@ type Runner struct {
 func NewRunner(ctx context.Context, namespace string, allNamespaces bool, verifiers []string) *Runner {
 	client, err := k8s.NewClient()
 	if err != nil {
-		output.WriteFatal(fmt.Errorf("Failed to create Kubernetes client: %w", err))
+		output.WriteFatal("Failed to create Kubernetes client: %w", err)
 	}
 
 	// Check if verifiers exists in Verifier slice
@@ -54,7 +53,7 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, verifi
 
 	// Check if all verifiers provided exist
 	if len(verifiersToRun) != len(verifiers) {
-		output.WriteFatal(errors.New("One or more verifiers provided do not exist"))
+		output.WriteFatal("One or more verifiers provided do not exist")
 	}
 
 	return &Runner{
@@ -70,7 +69,7 @@ func (r *Runner) Run() {
 	for _, v := range r.verifiers {
 		verifierOutcome, err := v.Verify(r.ctx, r.client)
 		if err != nil {
-			output.WriteError(fmt.Errorf("Failed to verify experiment %s: %w", v.Name(), err))
+			output.WriteError("Failed to verify experiment %s: %w", v.Name(), err)
 			continue
 		}
 		rows = append(rows, []string{verifierOutcome.VerifierName, fmt.Sprintf("%t", verifierOutcome.Success), verifierOutcome.Message})

@@ -4,8 +4,6 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/operantai/experiments-runtime-tool/internal/experiments"
 	"github.com/operantai/experiments-runtime-tool/internal/output"
 	"github.com/spf13/cobra"
@@ -20,15 +18,15 @@ var runCmd = &cobra.Command{
 		// Read the flags
 		namespace, err := cmd.Flags().GetString("namespace")
 		if err != nil {
-			output.WriteError(fmt.Errorf("Error reading namespace flag: %v", err))
+			output.WriteError("Error reading namespace flag: %v", err)
 		}
 		allNamespaces, err := cmd.Flags().GetBool("all")
 		if err != nil {
-			output.WriteError(fmt.Errorf("Error reading all flag: %v", err))
+			output.WriteError("Error reading all flag: %v", err)
 		}
 		files, err := cmd.Flags().GetStringSlice("file")
 		if err != nil {
-			output.WriteError(fmt.Errorf("Error reading file flag: %v", err))
+			output.WriteError("Error reading file flag: %v", err)
 		}
 
 		// Run the experiment
