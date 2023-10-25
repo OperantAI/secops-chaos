@@ -5,9 +5,11 @@ package verifiers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/operantai/experiments-runtime-tool/internal/k8s"
+	"github.com/operantai/experiments-runtime-tool/internal/output"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -19,7 +21,13 @@ type Verifier interface {
 	// Name returns the name of the verifier
 	Name() string
 	// Verify verifies the experiment
-	Verify(ctx context.Context, client *kubernetes.Clientset) error
+	Verify(ctx context.Context, client *kubernetes.Clientset) (*VerifierOutput, error)
+}
+
+type VerifierOutput struct {
+	VerifierName string `json:"verifier_name"`
+	Success      bool   `json:"success"`
+	Message      string `json:"message"`
 }
 
 type Runner struct {
@@ -28,10 +36,10 @@ type Runner struct {
 	verifiers []Verifier
 }
 
-func NewRunner(ctx context.Context, verifiers []string) *Runner {
+func NewRunner(ctx context.Context, namespace string, allNamespaces bool, verifiers []string) *Runner {
 	client, err := k8s.NewClient()
 	if err != nil {
-		panic(err)
+		output.WriteFatal(fmt.Errorf("Failed to create Kubernetes client: %w", err))
 	}
 
 	// Check if verifiers exists in Verifier slice
@@ -46,7 +54,7 @@ func NewRunner(ctx context.Context, verifiers []string) *Runner {
 
 	// Check if all verifiers provided exist
 	if len(verifiersToRun) != len(verifiers) {
-		panic("One or more verifiers provided do not exist")
+		output.WriteFatal(errors.New("One or more verifiers provided do not exist"))
 	}
 
 	return &Runner{
@@ -57,10 +65,15 @@ func NewRunner(ctx context.Context, verifiers []string) *Runner {
 }
 
 func (r *Runner) Run() {
+	headers := []string{"Name", "Success", "Message"}
+	var rows [][]string
 	for _, v := range r.verifiers {
-		fmt.Printf("Running verifier: %s\n", v.Name())
-		if err := v.Verify(r.ctx, r.client); err != nil {
-			fmt.Printf("Failed to verify experiment %s: %s\n", v.Name(), err)
+		verifierOutcome, err := v.Verify(r.ctx, r.client)
+		if err != nil {
+			output.WriteError(fmt.Errorf("Failed to verify experiment %s: %w", v.Name(), err))
+			continue
 		}
+		rows = append(rows, []string{verifierOutcome.VerifierName, fmt.Sprintf("%t", verifierOutcome.Success), verifierOutcome.Message})
 	}
+	output.WriteTable(headers, rows)
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/operantai/experiments-runtime-tool/internal/k8s"
+	"github.com/operantai/experiments-runtime-tool/internal/output"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -32,11 +33,11 @@ type Runner struct {
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, experiments []string) *Runner {
+func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experiments []string) *Runner {
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
-		panic(err)
+		output.WriteFatal(fmt.Errorf("Failed to create Kubernetes client: %w", err))
 	}
 
 	// Check if experiment exists in Experiments slice
@@ -51,7 +52,7 @@ func NewRunner(ctx context.Context, experiments []string) *Runner {
 
 	// Check if all experiments provided are valid
 	if len(experimentsToRun) != len(experiments) {
-		panic("One or more experiments provided are not valid")
+		output.WriteFatal(errors.New("One or more experiments provided are not valid"))
 	}
 
 	return &Runner{
@@ -65,8 +66,9 @@ func NewRunner(ctx context.Context, experiments []string) *Runner {
 func (r *Runner) Run() {
 	for _, e := range r.experiments {
 		fmt.Printf("Running experiment %s\n", e.Name())
+		output.WriteInfo("Running experiment %s\n", e.Name())
 		if err := e.Run(r.ctx, r.client); err != nil {
-			fmt.Printf("Experiment %s failed: %s\n", e.Name(), err)
+			output.WriteError(fmt.Errorf("Experiment %s failed: %w", e.Name(), err)
 		}
 	}
 }
@@ -74,9 +76,10 @@ func (r *Runner) Run() {
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
 	for _, e := range r.experiments {
+		output.WriteInfo("Cleaning up experiment %s\n", e.Name())
 		fmt.Printf("Cleaning up experiment %s\n", e.Name())
 		if err := e.Cleanup(r.ctx, r.client); err != nil {
-			fmt.Printf("Experiment %s cleanup failed: %s\n", e.Name(), err)
+			output.WriteError(fmt.Errorf("Experiment %s cleanup failed: %w", e.Name(), err)
 		}
 
 	}
