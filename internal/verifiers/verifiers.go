@@ -6,6 +6,7 @@ package verifiers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/operantai/experiments-runtime-tool/internal/k8s"
 	"github.com/operantai/experiments-runtime-tool/internal/output"
@@ -24,9 +25,15 @@ type Verifier interface {
 }
 
 type VerifierOutput struct {
-	VerifierName string `json:"verifier_name"`
-	Success      bool   `json:"success"`
-	Message      string `json:"message"`
+	Timestamp      time.Time         `json:"timestamp"`
+	ExperimentName string            `json:"verifier_name"`
+	Category       string            `json:"category"`
+	Outcome        ExperimentOutcome `json:"success"`
+}
+
+type ExperimentOutcome struct {
+	ExperimentsRun    int `json:"experiments_run"`
+	ExperimentsPassed int `json:"experiments_passed"`
 }
 
 type Runner struct {
@@ -64,15 +71,15 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, verifi
 }
 
 func (r *Runner) Run() {
-	headers := []string{"Name", "Success", "Message"}
+	headers := []string{"Timestamp", "Name", "Category", "Success"}
 	var rows [][]string
 	for _, v := range r.verifiers {
-		verifierOutcome, err := v.Verify(r.ctx, r.client)
+		result, err := v.Verify(r.ctx, r.client)
 		if err != nil {
 			output.WriteError("Failed to verify experiment %s: %w", v.Name(), err)
 			continue
 		}
-		rows = append(rows, []string{verifierOutcome.VerifierName, fmt.Sprintf("%t", verifierOutcome.Success), verifierOutcome.Message})
+		rows = append(rows, []string{result.Timestamp.String(), result.ExperimentName, result.Category, fmt.Sprintf("%s/%s", result.Outcome.ExperimentsPassed, result.Outcome.ExperimentsRun)})
 	}
 	output.WriteTable(headers, rows)
 }
