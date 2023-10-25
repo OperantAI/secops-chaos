@@ -42,7 +42,7 @@ func init() {
 	rootCmd.AddCommand(cleanCmd)
 
 	// Define the path of the experiment file to run
-	cleanCmd.Flags().StringP("file", "f", "", "Experiment file(s) to run")
+	cleanCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
 	cleanCmd.MarkFlagRequired("file")
 
 	// Define the namespace(s) to run the experiment in
