@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 Operant AI
+Copyright 2023 Operant AI
 */
 package cmd
 
