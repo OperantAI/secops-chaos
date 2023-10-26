@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/operantai/experiments-runtime-tool/internal/k8s"
-	"github.com/operantai/experiments-runtime-tool/internal/output"
+	"github.com/operantai/secops-chaos/internal/k8s"
+	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
 )
 

@@ -1,4 +1,4 @@
-module github.com/operantai/experiments-runtime-tool
+module github.com/operantai/secops-chaos
 
 go 1.21.3
 

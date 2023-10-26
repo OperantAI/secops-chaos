@@ -1,10 +1,10 @@
-# Experiments Runtime Tool
+# secops-chaos
 
 ### Usage
 
 ``` sh
 Usage:
-  experiments-runtime-tool [command]
+  secops-chaos [command]
 
 Available Commands:
   clean       Clean up after an experiment run
@@ -15,7 +15,7 @@ Available Commands:
   version     Output CLI version information
 
 Flags:
-  -h, --help   help for experiments-runtime-tool
+  -h, --help   help for secops-chaos
 
-Use "experiments-runtime-tool [command] --help" for more information about a command.
+Use "secops-chaos [command] --help" for more information about a command.
 ```

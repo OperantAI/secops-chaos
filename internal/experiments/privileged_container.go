@@ -6,8 +6,8 @@ package experiments
 import (
 	"context"
 
-	"github.com/operantai/experiments-runtime-tool/internal/categories"
-	"github.com/operantai/experiments-runtime-tool/internal/output"
+	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/output"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,9 +18,13 @@ import (
 )
 
 type PrivilegedContainer struct {
-	HostPid     bool `yaml:"host_pid"`
-	HostNetwork bool `yaml:"host_network"`
-	RunAsRoot   bool `yaml:"run_as_root"`
+	Experiment ExperimentConfig `yaml:"experiment"`
+	Parameters struct {
+		Privileged  bool `yaml:"privileged"`
+		HostPid     bool `yaml:"host_pid"`
+		HostNetwork bool `yaml:"host_network"`
+		RunAsRoot   bool `yaml:"run_as_root"`
+	} `yaml:"parameters"`
 }
 
 func (p *PrivilegedContainer) Name() string {

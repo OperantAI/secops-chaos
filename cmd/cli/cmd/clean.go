@@ -4,16 +4,16 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
-	"github.com/operantai/experiments-runtime-tool/internal/experiments"
-	"github.com/operantai/experiments-runtime-tool/internal/output"
+	"github.com/operantai/secops-chaos/internal/experiments"
+	"github.com/operantai/secops-chaos/internal/output"
 	"github.com/spf13/cobra"
 )
 
-// runCmd represents the run command
-var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "Run an experiment",
-	Long:  "Run an experiment",
+// cleanCmd represents the clean command
+var cleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Clean up after an experiment run",
+	Long:  "Clean up after an experiment run",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read the flags
 		namespace, err := cmd.Flags().GetString("namespace")
@@ -29,22 +29,22 @@ var runCmd = &cobra.Command{
 			output.WriteError("Error reading file flag: %v", err)
 		}
 
-		// Run the experiment
+		// Create a new experiment runner and clean up
 		ctx := cmd.Context()
 		er := experiments.NewRunner(ctx, namespace, allNamespaces, files)
-		er.Run()
+		er.Cleanup()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(cleanCmd)
 
 	// Define the path of the experiment file to run
-	runCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
-	runCmd.MarkFlagRequired("file")
+	cleanCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
+	cleanCmd.MarkFlagRequired("file")
 
 	// Define the namespace(s) to run the experiment in
-	runCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
-	runCmd.Flags().BoolP("all", "a", false, "Run experiment in all namespaces")
-	runCmd.MarkFlagsMutuallyExclusive("namespace", "all")
+	cleanCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
+	cleanCmd.Flags().StringP("all", "a", "", "Run experiment in all namespaces")
+	cleanCmd.MarkFlagsMutuallyExclusive("namespace", "all")
 }

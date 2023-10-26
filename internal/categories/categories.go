@@ -1,7 +1,7 @@
 package categories
 
-// MITRECategories struct to hold MITRE categories
-type MITRECategories struct {
+// mitreCategories struct to hold MITRE categories
+type mitreCategories struct {
 	InitialAccess       InitialAccess
 	Execution           Execution
 	Persistence         Persistence
@@ -86,11 +86,11 @@ type LateralMovement struct {
 
 // Exported instances of the categories
 var (
-	MITRE MITRECategories
+	MITRE mitreCategories
 )
 
 func init() {
-	MITRE = MITRECategories{
+	MITRE = mitreCategories{
 		InitialAccess{
 			UsingCloudCredentials:       mitreEntry{"TA0001", "Intial Access", "Using Cloud Credentials"},
 			CompromisedImagesInRegistry: mitreEntry{"TA0001", "Intial Access", "Compromised Images in Registry"},

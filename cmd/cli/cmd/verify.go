@@ -4,16 +4,16 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
-	"github.com/operantai/experiments-runtime-tool/internal/experiments"
-	"github.com/operantai/experiments-runtime-tool/internal/output"
+	"github.com/operantai/secops-chaos/internal/experiments"
+	"github.com/operantai/secops-chaos/internal/output"
 	"github.com/spf13/cobra"
 )
 
-// cleanCmd represents the clean command
-var cleanCmd = &cobra.Command{
-	Use:   "clean",
-	Short: "Clean up after an experiment run",
-	Long:  "Clean up after an experiment run",
+// verifyCmd represents the verify command
+var verifyCmd = &cobra.Command{
+	Use:   "verify",
+	Short: "Verify the outcome of an experiment",
+	Long:  "Verify the outcome of an experiment",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read the flags
 		namespace, err := cmd.Flags().GetString("namespace")
@@ -29,22 +29,22 @@ var cleanCmd = &cobra.Command{
 			output.WriteError("Error reading file flag: %v", err)
 		}
 
-		// Create a new experiment runner and clean up
+		// Run the verifiers
 		ctx := cmd.Context()
 		er := experiments.NewRunner(ctx, namespace, allNamespaces, files)
-		er.Cleanup()
+		er.RunVerifiers()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(cleanCmd)
+	rootCmd.AddCommand(verifyCmd)
 
 	// Define the path of the experiment file to run
-	cleanCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
-	cleanCmd.MarkFlagRequired("file")
+	verifyCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
+	verifyCmd.MarkFlagRequired("file")
 
 	// Define the namespace(s) to run the experiment in
-	cleanCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
-	cleanCmd.Flags().StringP("all", "a", "", "Run experiment in all namespaces")
-	cleanCmd.MarkFlagsMutuallyExclusive("namespace", "all")
+	verifyCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
+	verifyCmd.Flags().BoolP("all", "a", false, "Run experiment in all namespaces")
+	verifyCmd.MarkFlagsMutuallyExclusive("namespace", "all")
 }
