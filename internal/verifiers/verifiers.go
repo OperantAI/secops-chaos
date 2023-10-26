@@ -45,7 +45,7 @@ type Runner struct {
 func NewRunner(ctx context.Context, namespace string, allNamespaces bool, verifiers []string) *Runner {
 	client, err := k8s.NewClient()
 	if err != nil {
-		output.WriteFatal("Failed to create Kubernetes client: %w", err)
+		output.WriteFatal("Failed to create Kubernetes client: %s", err)
 	}
 
 	// Check if verifiers exists in Verifier slice
@@ -76,10 +76,10 @@ func (r *Runner) Run() {
 	for _, v := range r.verifiers {
 		result, err := v.Verify(r.ctx, r.client)
 		if err != nil {
-			output.WriteError("Failed to verify experiment %s: %w", v.Name(), err)
+			output.WriteError("Failed to verify experiment %s: %s", v.Name(), err)
 			continue
 		}
-		rows = append(rows, []string{result.Timestamp.String(), result.ExperimentName, result.Category, fmt.Sprintf("%s/%s", result.Outcome.ExperimentsPassed, result.Outcome.ExperimentsRun)})
+		rows = append(rows, []string{result.Timestamp.String(), result.ExperimentName, result.Category, fmt.Sprintf("%d/%d", result.Outcome.ExperimentsPassed, result.Outcome.ExperimentsRun)})
 	}
 	output.WriteTable(headers, rows)
 }

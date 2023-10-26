@@ -2,9 +2,15 @@ package experiments
 
 import (
 	"fmt"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
+
+type ExperimentsConfig struct {
+	// Experiments is a slice of ExperimentConfig
+	Experiments []ExperimentConfig `yaml:"experiments"`
+}
 
 type ExperimentConfig struct {
 	// Name of the experiment
@@ -20,17 +26,39 @@ type ExperimentConfig struct {
 }
 
 // ParseFile parses a YAML file and returns a slice of ExperimentConfig
-func parseFile(file string) ([]ExperimentConfig, error) {
-	var config []ExperimentConfig
-	err := yaml.Unmarshal([]byte(file), &config)
-	for _, experiment := range config {
+func parseFile(file string) (*ExperimentsConfig, error) {
+	// Read the file and then unmarshal it into a slice of ExperimentConfig
+	contents, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	config, err := unmarshalYAML(contents)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func unmarshalYAML(contents []byte) (*ExperimentsConfig, error) {
+	var config ExperimentsConfig
+	err := yaml.Unmarshal(contents, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, experiment := range config.Experiments {
 		if experiment.Parameters == nil {
 			return nil, fmt.Errorf("Parameters in experiment %s cannot be nil", experiment.Name)
 		}
-		switch experiment.Parameters.(type) {
-		case PrivilegedContainer:
+
+		switch experiment.Type {
+		case "privileged_container":
 			var privilegedContainer PrivilegedContainer
-			err = yaml.Unmarshal([]byte(file), &privilegedContainer)
+			yamlContents, err := yaml.Marshal(experiment.Parameters)
+			if err != nil {
+				return nil, err
+			}
+			err = yaml.Unmarshal(yamlContents, &privilegedContainer)
 			if err != nil {
 				return nil, err
 			}
@@ -39,8 +67,6 @@ func parseFile(file string) ([]ExperimentConfig, error) {
 			return nil, fmt.Errorf("Unsupported experiment type: %s", experiment.Type)
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
+
+	return &config, nil
 }

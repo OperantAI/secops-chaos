@@ -37,7 +37,7 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
-		output.WriteFatal("Failed to create Kubernetes client: %w", err)
+		output.WriteFatal("Failed to create Kubernetes client: %s", err)
 	}
 
 	// Check if experiment exists in Experiments slice
@@ -68,7 +68,7 @@ func (r *Runner) Run() {
 		fmt.Printf("Running experiment %s\n", e.Name())
 		output.WriteInfo("Running experiment %s\n", e.Name())
 		if err := e.Run(r.ctx, r.client); err != nil {
-			output.WriteError("Experiment %s failed: %w", e.Name(), err)
+			output.WriteError("Experiment %s failed: %s", e.Name(), err)
 		}
 	}
 }
@@ -79,7 +79,7 @@ func (r *Runner) Cleanup() {
 		output.WriteInfo("Cleaning up experiment %s\n", e.Name())
 		fmt.Printf("Cleaning up experiment %s\n", e.Name())
 		if err := e.Cleanup(r.ctx, r.client); err != nil {
-			output.WriteError("Experiment %s cleanup failed: %w", e.Name(), err)
+			output.WriteError("Experiment %s cleanup failed: %s", e.Name(), err)
 		}
 
 	}
