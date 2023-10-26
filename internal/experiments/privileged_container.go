@@ -6,6 +6,7 @@ package experiments
 import (
 	"context"
 
+	"github.com/operantai/experiments-runtime-tool/internal/categories"
 	"github.com/operantai/experiments-runtime-tool/internal/output"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,6 +25,10 @@ type PrivilegedContainer struct {
 
 func (p *PrivilegedContainer) Name() string {
 	return "PrivilegedContainer"
+}
+
+func (p *PrivilegedContainer) Category() string {
+	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Name
 }
 
 func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Clientset) error {
@@ -76,6 +81,43 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 	output.WriteInfo("Creating experiment: %s", config.Name)
 	_, err := client.AppsV1().Deployments(config.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
+}
+
+func (p *PrivilegedContainer) Verify(ctx context.Context, client *kubernetes.Clientset) (*VerifierOutput, error) {
+	deployment, err := client.AppsV1().Deployments("kube-system").Get(ctx, config.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Parameters.HostPid {
+		if deployment.Spec.Template.Spec.HostPID {
+			return &VerifierOutput{
+				Success: true,
+			}, nil
+		}
+	}
+
+	if config.Parameters.HostNetwork {
+		if deployment.Spec.Template.Spec.HostNetwork {
+			return &VerifierOutput{
+				Success: true,
+			}, nil
+		}
+	}
+
+	if config.Parameters.Privileged {
+		if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
+			if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
+				return &VerifierOutput{
+					Success: true,
+				}, nil
+			}
+		}
+	}
+
+	return &VerifierOutput{
+		Success: false,
+	}, nil
 }
 
 func (p *PrivilegedContainer) Cleanup(ctx context.Context, client *kubernetes.Clientset) error {

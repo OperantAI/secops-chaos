@@ -4,8 +4,8 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
+	"github.com/operantai/experiments-runtime-tool/internal/experiments"
 	"github.com/operantai/experiments-runtime-tool/internal/output"
-	"github.com/operantai/experiments-runtime-tool/internal/verifiers"
 	"github.com/spf13/cobra"
 )
 
@@ -31,8 +31,8 @@ var verifyCmd = &cobra.Command{
 
 		// Run the verifiers
 		ctx := cmd.Context()
-		vr := verifiers.NewRunner(ctx, namespace, allNamespaces, files)
-		vr.Run()
+		er := experiments.NewRunner(ctx, namespace, allNamespaces, files)
+		er.RunVerifiers()
 	},
 }
 

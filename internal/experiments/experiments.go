@@ -19,8 +19,12 @@ var Experiments = []Experiment{
 type Experiment interface {
 	// Name returns the name of the experiment
 	Name() string
+	// Category returns the MITRE/OWASP category of the experiment
+	Category() string
 	// Run runs the experiment, returning an error if it fails
 	Run(ctx context.Context, client *kubernetes.Clientset) error
+	// Verify verifies the experiment, returning an error if it fails
+	Verify(ctx context.Context, client *kubernetes.Clientset) error
 	// Cleanup cleans up the experiment, returning an error if it fails
 	Cleanup(ctx context.Context, client *kubernetes.Clientset) error
 }
@@ -65,8 +69,17 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
 	for _, e := range r.experiments {
-		fmt.Printf("Running experiment %s\n", e.Name())
 		output.WriteInfo("Running experiment %s\n", e.Name())
+		if err := e.Run(r.ctx, r.client); err != nil {
+			output.WriteError("Experiment %s failed: %s", e.Name(), err)
+		}
+	}
+}
+
+// RunVerifiers runs all verifiers in the Runner for the provided experiments
+func (r *Runner) RunVerifiers() {
+	for _, e := range r.experiments {
+		output.WriteInfo("Running verifier %s\n", e.Name())
 		if err := e.Run(r.ctx, r.client); err != nil {
 			output.WriteError("Experiment %s failed: %s", e.Name(), err)
 		}
