@@ -68,13 +68,14 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 			},
 		},
 	}
-	if p.HostPid {
+	params := config.Parameters.(PrivilegedContainer)
+	if params.HostPid {
 		deployment.Spec.Template.Spec.HostPID = true
 	}
-	if p.HostNetwork {
+	if params.HostNetwork {
 		deployment.Spec.Template.Spec.HostNetwork = true
 	}
-	if p.RunAsRoot {
+	if params.RunAsRoot {
 		deployment.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
 			RunAsUser: pointer.Int64(0),
 		}
