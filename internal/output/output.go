@@ -19,27 +19,27 @@ const (
 
 func WriteInfo(msg string, args ...interface{}) {
 	style := lipgloss.NewStyle().Foreground(InfoColor)
-	fmt.Printf("%s %s\n", style.Render("INFO"), fmt.Sprintf(msg, args...))
+	fmt.Printf("%s %s", style.Render("INFO"), fmt.Sprintf(msg, args...))
 }
 
 func WriteSuccess(msg string, args ...interface{}) {
 	style := lipgloss.NewStyle().Foreground(SuccessColor)
-	fmt.Printf("%s %s\n", style.Render("SUCCESS"), fmt.Sprintf(msg, args...))
+	fmt.Printf("%s %s", style.Render("SUCCESS"), fmt.Sprintf(msg, args...))
 }
 
 func WriteWarning(msg string, args ...interface{}) {
 	style := lipgloss.NewStyle().Foreground(WarningColor)
-	fmt.Printf("%s %s\n", style.Render("WARN"), fmt.Sprintf(msg, args...))
+	fmt.Printf("%s %s", style.Render("WARN"), fmt.Sprintf(msg, args...))
 }
 
 func WriteError(msg string, args ...interface{}) {
 	style := lipgloss.NewStyle().Foreground(ErrorColor)
-	fmt.Printf("%s %s\n", style.Render("ERROR"), fmt.Sprintf(msg, args...))
+	fmt.Printf("%s %s", style.Render("ERROR"), fmt.Sprintf(msg, args...))
 }
 
 func WriteFatal(msg string, args ...interface{}) {
 	style := lipgloss.NewStyle().Foreground(ErrorColor)
-	fmt.Printf("%s %s\n", style.Render("FATAL"), fmt.Sprintf(msg, args...))
+	fmt.Printf("%s %s", style.Render("FATAL"), fmt.Sprintf(msg, args...))
 	os.Exit(1)
 }
 

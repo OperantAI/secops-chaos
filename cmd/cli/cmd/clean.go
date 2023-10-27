@@ -45,6 +45,6 @@ func init() {
 
 	// Define the namespace(s) to run the experiment in
 	cleanCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
-	cleanCmd.Flags().StringP("all", "a", "", "Run experiment in all namespaces")
+	cleanCmd.Flags().BoolP("all", "a", false, "Run experiment in all namespaces")
 	cleanCmd.MarkFlagsMutuallyExclusive("namespace", "all")
 }
