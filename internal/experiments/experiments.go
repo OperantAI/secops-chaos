@@ -39,7 +39,6 @@ type Runner struct {
 }
 
 type JSONOutput struct {
-	CLIVersion string     `json:"cli_version"`
 	K8sVersion string     `json:"k8s_version"`
 	Results    []*Outcome `json:"results"`
 }
@@ -104,7 +103,6 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 	rows := [][]string{}
 	outcomes := []*Outcome{}
 	for _, e := range Experiments {
-		output.WriteInfo("Verifying experiment %s\n", e.Name())
 		outcome, err := e.Verify(r.ctx, r.client, r.experimentsConfig[e.Name()])
 		if err != nil {
 			output.WriteError("Verifier %s failed: %s", e.Name(), err)
@@ -116,11 +114,19 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 		}
 	}
 	if outputJSON {
-		jsonOutput, err := json.Marshal(outcomes)
+		k8sVersion, err := k8s.GetK8sVersion(r.client)
+		if err != nil {
+			output.WriteError("Failed to get Kubernetes version: %s", err)
+		}
+		out := JSONOutput{
+			K8sVersion: k8sVersion.String(),
+			Results:    outcomes,
+		}
+		jsonOutput, err := json.MarshalIndent(out, "", "    ")
 		if err != nil {
 			output.WriteError("Failed to marshal JSON: %s", err)
 		}
-		fmt.Println(jsonOutput)
+		fmt.Println(string(jsonOutput))
 		return
 	}
 	output.WriteTable(headers, rows)
@@ -130,7 +136,6 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 func (r *Runner) Cleanup() {
 	for _, e := range r.experiments {
 		output.WriteInfo("Cleaning up experiment %s\n", e.Name())
-		fmt.Printf("Cleaning up experiment %s\n", e.Name())
 		if err := e.Cleanup(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
 			output.WriteError("Experiment %s cleanup failed: %s", e.Name(), err)
 		}

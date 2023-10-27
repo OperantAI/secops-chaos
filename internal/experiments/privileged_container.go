@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/operantai/secops-chaos/internal/categories"
-	"github.com/operantai/secops-chaos/internal/output"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -58,8 +57,9 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 							Image:           "alpine:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
-								"sleep",
-								"1000000",
+								"sh",
+								"-c",
+								"while true; do :; done",
 							},
 							Ports: []corev1.ContainerPort{
 								{
@@ -80,12 +80,25 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 		deployment.Spec.Template.Spec.HostNetwork = true
 	}
 	if params.RunAsRoot {
-		deployment.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
-			RunAsUser: pointer.Int64(0),
+		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
+			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
+				RunAsUser: pointer.Int64(0),
+			}
+		} else {
+			deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = pointer.Int64(0)
 		}
 	}
 
-	output.WriteInfo("Creating experiment: %s", config.Name)
+	if params.Privileged {
+		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
+			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
+				Privileged: pointer.Bool(true),
+			}
+		} else {
+			deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged = pointer.Bool(true)
+		}
+	}
+
 	_, err := client.AppsV1().Deployments(config.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
