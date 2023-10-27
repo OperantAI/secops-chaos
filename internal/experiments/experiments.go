@@ -45,9 +45,9 @@ type JSONOutput struct {
 }
 
 type Outcome struct {
-	ExperimentName string `json:"experiment_name"`
-	Success        bool   `json:"success"`
-	Message        string `json:"message"`
+	Experiment string `json:"experiment"`
+	Category   string `json:"category"`
+	Success    bool   `json:"success"`
 }
 
 // NewRunner returns a new Runner
@@ -72,8 +72,10 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 		}
 
 		for _, eConf := range experimentsConfig.Experiments {
-			if _, exists := experimentMap[eConf.Name]; exists {
-				experimentConfigMap[eConf.Name] = &eConf
+			if _, exists := experimentMap[eConf.Type]; exists {
+				experimentConfigMap[eConf.Type] = &eConf
+			} else {
+				output.WriteError("Experiment %s does not exist", eConf.Type)
 			}
 		}
 	}
@@ -98,7 +100,7 @@ func (r *Runner) Run() {
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(outputJSON bool) {
-	headers := []string{"Experiment", "Success", "Message"}
+	headers := []string{"Experiment", "Category", "Result"}
 	rows := [][]string{}
 	outcomes := []*Outcome{}
 	for _, e := range Experiments {
@@ -110,7 +112,7 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 		if outputJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			rows = append(rows, []string{outcome.ExperimentName, fmt.Sprintf("%t", outcome.Success), outcome.Message})
+			rows = append(rows, []string{outcome.Experiment, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
 		}
 	}
 	if outputJSON {

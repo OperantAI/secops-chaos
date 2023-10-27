@@ -19,8 +19,6 @@ type ExperimentConfig struct {
 	Namespace string `yaml:"namespace"`
 	// Type of the experiment
 	Type string `yaml:"type"`
-	// Labels to apply to the experiment in addition to the default labels
-	Labels map[string]string `yaml:"labels"`
 	// Parameters for the experiment
 	Parameters interface{} `yaml:"parameters"`
 }

@@ -25,7 +25,7 @@ type PrivilegedContainer struct {
 }
 
 func (p *PrivilegedContainer) Name() string {
-	return "PrivilegedContainer"
+	return "privileged_container"
 }
 
 func (p *PrivilegedContainer) Category() string {
@@ -38,7 +38,7 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 			Name: config.Name,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32Ptr(1),
+			Replicas: pointer.Int32(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": config.Name,
@@ -57,6 +57,10 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 							Name:            config.Name,
 							Image:           "alpine:latest",
 							ImagePullPolicy: corev1.PullAlways,
+							Command: []string{
+								"sleep",
+								"1000000",
+							},
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: 4000,
@@ -80,51 +84,53 @@ func (p *PrivilegedContainer) Run(ctx context.Context, client *kubernetes.Client
 			RunAsUser: pointer.Int64(0),
 		}
 	}
+
 	output.WriteInfo("Creating experiment: %s", config.Name)
 	_, err := client.AppsV1().Deployments(config.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
 func (p *PrivilegedContainer) Verify(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) (*Outcome, error) {
-	deployment, err := client.AppsV1().Deployments("kube-system").Get(ctx, config.Name, metav1.GetOptions{})
+	deployment, err := client.AppsV1().Deployments(config.Namespace).Get(ctx, config.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	params := config.Parameters.(PrivilegedContainer)
+	outcome := &Outcome{
+		Experiment: config.Name,
+		Category:   p.Category(),
+		Success:    false,
+	}
 
 	if params.HostPid {
 		if deployment.Spec.Template.Spec.HostPID {
-			return &Outcome{
-				Success: true,
-			}, nil
+			outcome.Success = true
+			return outcome, nil
 		}
 	}
 
 	if params.HostNetwork {
 		if deployment.Spec.Template.Spec.HostNetwork {
-			return &Outcome{
-				Success: true,
-			}, nil
+			outcome.Success = true
+			return outcome, nil
 		}
 	}
 
 	if params.Privileged {
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
-			if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
-				return &Outcome{
-					Success: true,
-				}, nil
+		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
+			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
+				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
+					outcome.Success = true
+					return outcome, nil
+				}
 			}
 		}
 	}
 
-	return &Outcome{
-		Success: false,
-	}, nil
+	return outcome, nil
 }
 
 func (p *PrivilegedContainer) Cleanup(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error {
-	output.WriteInfo("Deleting experiment: %s", config.Name)
 	return client.AppsV1().Deployments(config.Namespace).Delete(ctx, config.Name, metav1.DeleteOptions{})
 }
 
