@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 )
 
 type ExperimentsConfig struct {
-	// Experiments is a slice of ExperimentConfig
 	Experiments []ExperimentConfig `yaml:"experiments"`
 }
 
@@ -21,10 +21,12 @@ type ExperimentConfig struct {
 	Type string `yaml:"type"`
 	// Labels to apply to the experiment in addition to the default labels
 	Labels map[string]string `yaml:"labels"`
+	// Parameters for the experiment
+	Parameters interface{} `yaml:"parameters"`
 }
 
-// ParseFile parses a YAML file and returns a slice of ExperimentConfig
-func parseFile(file string) (*ExperimentsConfig, error) {
+// parseExperimentConfig parses a YAML file and returns a slice of ExperimentConfig
+func parseExperimentConfig(file string) (*ExperimentsConfig, error) {
 	// Read the file and then unmarshal it into a slice of ExperimentConfig
 	contents, err := os.ReadFile(file)
 	if err != nil {
@@ -45,18 +47,29 @@ func unmarshalYAML(contents []byte) (*ExperimentsConfig, error) {
 	}
 
 	for _, experiment := range config.Experiments {
+		if experiment.Parameters == nil {
+			return nil, fmt.Errorf("Experiment %s is missing parameters", experiment.Name)
+		}
+	}
+
+	var specificExperiments []ExperimentConfig
+
+	for _, experiment := range config.Experiments {
 		switch experiment.Type {
 		case "privileged_container":
 			var privilegedContainer PrivilegedContainer
-			err = yaml.Unmarshal(contents, &privilegedContainer)
+			err := mapstructure.Decode(experiment.Parameters, &privilegedContainer)
 			if err != nil {
 				return nil, err
 			}
-
+			experiment.Parameters = privilegedContainer
+			specificExperiments = append(specificExperiments, experiment)
 		default:
 			return nil, fmt.Errorf("Unsupported experiment type: %s", experiment.Type)
 		}
 	}
+
+	config.Experiments = specificExperiments
 
 	return &config, nil
 }

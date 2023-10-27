@@ -56,9 +56,7 @@ experiments:
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			config, err := unmarshalYAML(test.contents)
-			t.Log(config.Experiments[0].Parameters.(PrivilegedContainer).HostPid)
-
+			_, err := unmarshalYAML(test.contents)
 			if test.expectError {
 				assert.Error(t, err)
 			} else {

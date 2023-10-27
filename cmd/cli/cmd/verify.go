@@ -28,11 +28,15 @@ var verifyCmd = &cobra.Command{
 		if err != nil {
 			output.WriteError("Error reading file flag: %v", err)
 		}
+		outputJSON, err := cmd.Flags().GetBool("json")
+		if err != nil {
+			output.WriteError("Error reading json output flag: %v", err)
+		}
 
 		// Run the verifiers
 		ctx := cmd.Context()
 		er := experiments.NewRunner(ctx, namespace, allNamespaces, files)
-		er.RunVerifiers()
+		er.RunVerifiers(outputJSON)
 	},
 }
 
@@ -42,6 +46,9 @@ func init() {
 	// Define the path of the experiment file to run
 	verifyCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
 	verifyCmd.MarkFlagRequired("file")
+
+	// Output the results in JSON format
+	verifyCmd.Flags().BoolP("json", "j", false, "Output results in JSON format")
 
 	// Define the namespace(s) to run the experiment in
 	verifyCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
