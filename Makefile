@@ -1,4 +1,4 @@
-BINARY_NAME = experiments-runtime-tool
+BINARY_NAME = secops-chaos
 REPO_NAME = github.com/operantai/$(BINARY_NAME)
 GIT_COMMIT = $(shell git rev-list -1 HEAD)
 BUILD_DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -8,7 +8,7 @@ LD_FLAGS = "-X $(REPO_NAME)/cmd.GitCommit=$(GIT_COMMIT) -X $(REPO_NAME)/cmd.Vers
 all: fmt vet test build
 
 build: ## Build binary
-	@go build -o "bin/$(BINARY_NAME)" -ldflags $(LD_FLAGS) main.go
+	@go build -o "bin/$(BINARY_NAME)" -ldflags $(LD_FLAGS) cmd/cli/main.go
 
 fmt: ## Run go fmt
 	@go fmt ./...

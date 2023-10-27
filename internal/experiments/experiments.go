@@ -5,9 +5,11 @@ package experiments
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
-	"github.com/operantai/experiments-runtime-tool/internal/k8s"
+	"github.com/operantai/secops-chaos/internal/k8s"
+	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -18,65 +20,124 @@ var Experiments = []Experiment{
 type Experiment interface {
 	// Name returns the name of the experiment
 	Name() string
+	// Category returns the MITRE/OWASP category of the experiment
+	Category() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *kubernetes.Clientset) error
+	Run(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error
+	// Verify verifies the experiment, returning an error if it fails
+	Verify(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) (*Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *kubernetes.Clientset) error
+	Cleanup(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error
 }
 
 // Runner runs a set of experiments
 type Runner struct {
-	ctx         context.Context
-	client      *kubernetes.Clientset
-	experiments map[string]Experiment
+	ctx               context.Context
+	client            *kubernetes.Clientset
+	experiments       map[string]Experiment
+	experimentsConfig map[string]*ExperimentConfig
+}
+
+type JSONOutput struct {
+	K8sVersion string     `json:"k8s_version"`
+	Results    []*Outcome `json:"results"`
+}
+
+type Outcome struct {
+	Experiment string `json:"experiment"`
+	Category   string `json:"category"`
+	Success    bool   `json:"success"`
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, experiments []string) *Runner {
+func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experiments []string) *Runner {
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
-		panic(err)
+		output.WriteFatal("Failed to create Kubernetes client: %s", err)
 	}
 
-	// Check if experiment exists in Experiments slice
-	experimentsToRun := make(map[string]Experiment)
+	experimentMap := make(map[string]Experiment)
+	experimentConfigMap := make(map[string]*ExperimentConfig)
+
 	for _, e := range Experiments {
-		for _, providedExperiment := range experiments {
-			if e.Name() == providedExperiment {
-				experimentsToRun[e.Name()] = e
+		experimentMap[e.Name()] = e
+	}
+
+	for _, e := range experiments {
+		experimentsConfig, err := parseExperimentConfig(e)
+		if err != nil {
+			output.WriteFatal("Failed to parse experiment config: %s", err)
+		}
+
+		for _, eConf := range experimentsConfig.Experiments {
+			if _, exists := experimentMap[eConf.Type]; exists {
+				experimentConfigMap[eConf.Type] = &eConf
+			} else {
+				output.WriteError("Experiment %s does not exist", eConf.Type)
 			}
 		}
 	}
 
-	// Check if all experiments provided are valid
-	if len(experimentsToRun) != len(experiments) {
-		panic("One or more experiments provided are not valid")
-	}
-
 	return &Runner{
-		ctx:         ctx,
-		client:      client,
-		experiments: experimentsToRun,
+		ctx:               ctx,
+		client:            client,
+		experiments:       experimentMap,
+		experimentsConfig: experimentConfigMap,
 	}
 }
 
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
-	for _, e := range r.experiments {
-		fmt.Printf("Running experiment %s\n", e.Name())
-		if err := e.Run(r.ctx, r.client); err != nil {
-			fmt.Printf("Experiment %s failed: %s\n", e.Name(), err)
+	for _, e := range Experiments {
+		output.WriteInfo("Running experiment %s\n", e.Name())
+		if err := e.Run(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
+			output.WriteError("Experiment %s failed: %s", e.Name(), err)
 		}
 	}
+}
+
+// RunVerifiers runs all verifiers in the Runner for the provided experiments
+func (r *Runner) RunVerifiers(outputJSON bool) {
+	headers := []string{"Experiment", "Category", "Result"}
+	rows := [][]string{}
+	outcomes := []*Outcome{}
+	for _, e := range Experiments {
+		outcome, err := e.Verify(r.ctx, r.client, r.experimentsConfig[e.Name()])
+		if err != nil {
+			output.WriteError("Verifier %s failed: %s", e.Name(), err)
+		}
+		if outputJSON {
+			outcomes = append(outcomes, outcome)
+		} else {
+			rows = append(rows, []string{outcome.Experiment, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
+		}
+	}
+	if outputJSON {
+		k8sVersion, err := k8s.GetK8sVersion(r.client)
+		if err != nil {
+			output.WriteError("Failed to get Kubernetes version: %s", err)
+		}
+		out := JSONOutput{
+			K8sVersion: k8sVersion.String(),
+			Results:    outcomes,
+		}
+		jsonOutput, err := json.MarshalIndent(out, "", "    ")
+		if err != nil {
+			output.WriteError("Failed to marshal JSON: %s", err)
+		}
+		fmt.Println(string(jsonOutput))
+		return
+	}
+	output.WriteTable(headers, rows)
 }
 
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
 	for _, e := range r.experiments {
-		fmt.Printf("Cleaning up experiment %s\n", e.Name())
-		if err := e.Cleanup(r.ctx, r.client); err != nil {
-			fmt.Printf("Experiment %s cleanup failed: %s\n", e.Name(), err)
+		output.WriteInfo("Cleaning up experiment %s\n", e.Name())
+		if err := e.Cleanup(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
+			output.WriteError("Experiment %s cleanup failed: %s", e.Name(), err)
 		}
 
 	}

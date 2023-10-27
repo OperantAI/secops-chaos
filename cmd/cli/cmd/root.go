@@ -4,14 +4,13 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
-	"os"
-
+	"github.com/operantai/secops-chaos/internal/output"
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "experiments-runtime-tool",
+	Use:   "secops-chaos",
 	Short: "tbd",
 	Long:  "tbd",
 }
@@ -21,6 +20,6 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		os.Exit(1)
+		output.WriteError(err.Error())
 	}
 }
