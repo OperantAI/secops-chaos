@@ -10,7 +10,6 @@ import (
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
-	"log"
 )
 
 var Experiments = []Experiment{
@@ -63,7 +62,6 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 
 	for _, e := range Experiments {
 		experimentMap[e.Type()] = e
-		log.Println(e.Type())
 	}
 
 	for _, e := range experimentFiles {

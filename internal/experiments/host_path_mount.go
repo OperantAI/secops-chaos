@@ -5,7 +5,6 @@ package experiments
 
 import (
 	"context"
-	"github.com/mitchellh/mapstructure"
 	"github.com/operantai/secops-chaos/internal/categories"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -106,26 +105,32 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kuberne
 
 func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error) {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
-	err := mapstructure.Decode(experimentConfig, &hostPathMountExperimentConfig)
+	yamlObj, _ := yaml.Marshal(experimentConfig)
+	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return nil, err
 	}
-	/*deployment, err := client.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Get(ctx, hostPathMountExperimentConfig.Metadata.Name, metav1.GetOptions{})
+	deployment, err := client.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Get(ctx, hostPathMountExperimentConfig.Metadata.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	params := hostPathMountExperimentConfig.Parameters*/
+	params := hostPathMountExperimentConfig.Parameters
 	outcome := &Outcome{
 		Experiment: hostPathMountExperimentConfig.Metadata.Name,
 		Category:   hostPathMountExperimentConfig.Category(),
 		Success:    false,
+	}
+	// TODO check that the pod is up
+	if deployment.Spec.Template.Spec.Volumes[0].HostPath.Path == params.HostPath.Path {
+		outcome.Success = true
 	}
 	return outcome, nil
 }
 
 func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
-	err := mapstructure.Decode(experimentConfig, &hostPathMountExperimentConfig)
+	yamlObj, _ := yaml.Marshal(experimentConfig)
+	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return err
 	}
