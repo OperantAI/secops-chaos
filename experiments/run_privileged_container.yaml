@@ -1,7 +1,8 @@
 experiments:
-  - name: run-privileged-container
-    type: privileged_container
-    namespace: default
+  - metadata:
+      name: run-privileged-container
+      type: privileged_container
+      namespace: default
     parameters:
       privileged: true
       host_pid: true

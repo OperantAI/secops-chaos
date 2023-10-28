@@ -7,27 +7,28 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
+	"log"
 )
 
 var Experiments = []Experiment{
-	&PrivilegedContainer{},
+	&PrivilegedContainerExperimentConfig{},
+	&HostPathMountExperimentConfig{},
 }
 
 type Experiment interface {
-	// Name returns the name of the experiment
-	Name() string
+	// Type returns the type of the experiment
+	Type() string
 	// Category returns the MITRE/OWASP category of the experiment
 	Category() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error
+	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) (*Outcome, error)
+	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error
+	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 }
 
 // Runner runs a set of experiments
@@ -50,7 +51,7 @@ type Outcome struct {
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experiments []string) *Runner {
+func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experimentFiles []string) *Runner {
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
@@ -61,20 +62,21 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
 	for _, e := range Experiments {
-		experimentMap[e.Name()] = e
+		experimentMap[e.Type()] = e
+		log.Println(e.Type())
 	}
 
-	for _, e := range experiments {
-		experimentsConfig, err := parseExperimentConfig(e)
+	for _, e := range experimentFiles {
+		experimentConfigs, err := parseExperimentConfigs(e)
 		if err != nil {
-			output.WriteFatal("Failed to parse experiment config: %s", err)
+			output.WriteFatal("Failed to parse experiment configs: %s", err)
 		}
 
-		for _, eConf := range experimentsConfig.Experiments {
-			if _, exists := experimentMap[eConf.Type]; exists {
-				experimentConfigMap[eConf.Type] = &eConf
+		for _, eConf := range experimentConfigs {
+			if _, exists := experimentMap[eConf.Metadata.Type]; exists {
+				experimentConfigMap[eConf.Metadata.Type] = &eConf
 			} else {
-				output.WriteError("Experiment %s does not exist", eConf.Type)
+				output.WriteError("Experiment %s does not exist", eConf.Metadata.Type)
 			}
 		}
 	}
@@ -89,10 +91,11 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
-	for _, e := range Experiments {
-		output.WriteInfo("Running experiment %s\n", e.Name())
-		if err := e.Run(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
-			output.WriteError("Experiment %s failed: %s", e.Name(), err)
+	for _, e := range r.experimentsConfig {
+		experiment := r.experiments[e.Metadata.Type]
+		output.WriteInfo("Running experiment %s\n", e.Metadata.Name)
+		if err := experiment.Run(r.ctx, r.client, e); err != nil {
+			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
 	}
 }
@@ -102,10 +105,11 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 	headers := []string{"Experiment", "Category", "Result"}
 	rows := [][]string{}
 	outcomes := []*Outcome{}
-	for _, e := range Experiments {
-		outcome, err := e.Verify(r.ctx, r.client, r.experimentsConfig[e.Name()])
+	for _, e := range r.experimentsConfig {
+		experiment := r.experiments[e.Metadata.Type]
+		outcome, err := experiment.Verify(r.ctx, r.client, e)
 		if err != nil {
-			output.WriteError("Verifier %s failed: %s", e.Name(), err)
+			output.WriteError("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
 		if outputJSON {
 			outcomes = append(outcomes, outcome)
@@ -134,10 +138,11 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
-	for _, e := range r.experiments {
-		output.WriteInfo("Cleaning up experiment %s\n", e.Name())
-		if err := e.Cleanup(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
-			output.WriteError("Experiment %s cleanup failed: %s", e.Name(), err)
+	for _, e := range r.experimentsConfig {
+		output.WriteInfo("Cleaning up experiment %s\n", e.Metadata.Name)
+		experiment := r.experiments[e.Metadata.Type]
+		if err := experiment.Cleanup(r.ctx, r.client, e); err != nil {
+			output.WriteError("Experiment %s cleanup failed: %s", e.Metadata.Name, err)
 		}
 
 	}
