@@ -78,6 +78,8 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 					},
 				},
 				Spec: corev1.PodSpec{
+					HostNetwork: privilegedContainerExperimentConfig.Parameters.HostNetwork,
+					HostPID:     privilegedContainerExperimentConfig.Parameters.HostPid,
 					Containers: []corev1.Container{
 						{
 							Name:            privilegedContainerExperimentConfig.Metadata.Name,
@@ -100,12 +102,6 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 	params := privilegedContainerExperimentConfig.Parameters
-	if params.HostPid {
-		deployment.Spec.Template.Spec.HostPID = true
-	}
-	if params.HostNetwork {
-		deployment.Spec.Template.Spec.HostNetwork = true
-	}
 	if params.RunAsRoot {
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
 			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
@@ -142,31 +138,42 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	}
 	params := privilegedContainerExperimentConfig.Parameters
 
-	outcome := &Outcome{
-		Experiment:  privilegedContainerExperimentConfig.Metadata.Name,
-		Description: privilegedContainerExperimentConfig.Description(),
-		Framework:   privilegedContainerExperimentConfig.Framework(),
-		Tactic:      privilegedContainerExperimentConfig.Tactic(),
-		Technique:   privilegedContainerExperimentConfig.Technique(),
-		Success:     false,
-	}
+	verifier := verifier.New(
+		privilegedContainerExperimentConfig.Metadata.Name,
+		privilegedContainerExperimentConfig.Description(),
+		privilegedContainerExperimentConfig.Framework(),
+		privilegedContainerExperimentConfig.Tactic(),
+		privilegedContainerExperimentConfig.Technique(),
+	)
 
-	verifier := verifier.New(p.Name(), p.Category())
 	if params.HostPid {
-		verifier.AssertEqual(params.HostPid, deployment.Spec.Template.Spec.HostPID)
+		if deployment.Spec.Template.Spec.HostPID {
+			verifier.Success()
+		}
 	}
 
 	if params.HostNetwork {
-		verifier.AssertEqual(params.HostNetwork, deployment.Spec.Template.Spec.HostNetwork)
+		if deployment.Spec.Template.Spec.HostNetwork {
+			verifier.Success()
+		}
+	}
+
+	if params.RunAsRoot {
+		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
+			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser != nil {
+				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser == 0 {
+					verifier.Success()
+				}
+			}
+		}
 	}
 
 	if params.Privileged {
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
 			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
-				verifier.AssertEqual(
-					&params.Privileged,
-					*deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged,
-				)
+				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
+					verifier.Success()
+				}
 			}
 		}
 	}

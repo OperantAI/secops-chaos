@@ -98,17 +98,24 @@ func (r *Runner) Run() {
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(writeJSON bool) {
 	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
-	outcomes := []*Outcome{}
+	outcomes := []*verifier.Outcome{}
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
 		outcome, err := experiment.Verify(r.ctx, r.client, e)
 		if err != nil {
-			output.WriteError("Verifier %s failed: %s", e.Metadata.Name, err)
+			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			table.AddRow([]string{outcome.Experiment, outcome.Category, outcome.Result.String()})
+			table.AddRow([]string{
+				outcome.Experiment,
+				outcome.Description,
+				outcome.Framework,
+				outcome.Tactic,
+				outcome.Technique,
+				outcome.Result.String(),
+			})
 		}
 	}
 	if writeJSON {

@@ -4,9 +4,7 @@ import "fmt"
 
 // Verifier is used to verify the results of an experiment
 type Verifier struct {
-	Outcome       *Outcome
-	Experiment    string
-	Category      string
+	outcome       *Outcome
 	numAssertions int
 }
 
@@ -33,11 +31,15 @@ type JSONOutput struct {
 }
 
 // New returns a new Verifier instance
-func New(experiment, description string) *Verifier {
+func New(experiment, description, framework, tactic, technique string) *Verifier {
 	return &Verifier{
-		Outcome:    &Outcome{},
-		Experiment: experiment,
-		Category:   category,
+		outcome: &Outcome{
+			Experiment:  experiment,
+			Description: description,
+			Framework:   framework,
+			Tactic:      tactic,
+			Technique:   technique,
+		},
 	}
 }
 
@@ -45,27 +47,29 @@ func New(experiment, description string) *Verifier {
 func (v *Verifier) AssertEqual(actual, expected interface{}) bool {
 	v.numAssertions++
 
-	// Create a new Outcome if one doesn't exist
-	if v.Outcome == nil {
-		v.Outcome = &Outcome{
-			Experiment: v.Experiment,
-			Category:   v.Category,
-			Result:     Result{},
-		}
-	}
-
 	// Update the Result based on the assertion
 	if actual == expected {
-		v.Outcome.Result.Successful++
+		v.outcome.Result.Successful++
 	}
-	v.Outcome.Result.Total++
+	v.outcome.Result.Total++
 
 	return actual == expected
 }
 
+// Success increments the successful and total counters
+func (v *Verifier) Success() {
+	v.outcome.Result.Successful++
+	v.outcome.Result.Total++
+}
+
+// Fail increments the total counter
+func (v *Verifier) Fail() {
+	v.outcome.Result.Total++
+}
+
 // GetOutcome returns the Outcome of the Verifier
 func (v *Verifier) GetOutcome() *Outcome {
-	return v.Outcome
+	return v.outcome
 }
 
 // String returns a string representation of the Verifier result
