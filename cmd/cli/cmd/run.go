@@ -42,9 +42,4 @@ func init() {
 	// Define the path of the experiment file to run
 	runCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
 	runCmd.MarkFlagRequired("file")
-
-	// Define the namespace(s) to run the experiment in
-	runCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
-	runCmd.Flags().BoolP("all", "a", false, "Run experiment in all namespaces")
-	runCmd.MarkFlagsMutuallyExclusive("namespace", "all")
 }
