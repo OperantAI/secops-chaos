@@ -5,6 +5,7 @@ package experiments
 
 import (
 	"context"
+	"fmt"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/operantai/secops-chaos/internal/categories"
@@ -38,7 +39,7 @@ func (p *PrivilegedContainerExperimentConfig) Description() string {
 }
 
 func (p *PrivilegedContainerExperimentConfig) Category() string {
-	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Name
+	return fmt.Sprintf("[MITRE] %s", categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Name)
 }
 
 func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {

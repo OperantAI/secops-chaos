@@ -37,7 +37,7 @@ func (p *HostPathMountExperimentConfig) Description() string {
 }
 
 func (p *HostPathMountExperimentConfig) Category() string {
-	return categories.MITRE.PrivilegeEscalation.HostPathMount.Name
+	return fmt.Sprintf("[MITRE] %s", categories.MITRE.PrivilegeEscalation.HostPathMount.Name)
 }
 
 func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
