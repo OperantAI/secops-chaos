@@ -16,11 +16,12 @@ func TestUnmarshalYAML(t *testing.T) {
 			name: "Valid Experiment",
 			contents: []byte(`
 experiments:
-- name: "Experiment 1"
-  namespace: "my-namespace"
-  type: "privileged_container"
-  labels:
-    key1: "value1"
+- metadata:
+    name: "Experiment 1"
+    namespace: "my-namespace"
+    type: "privileged_container"
+    labels:
+      key1: "value1"
   parameters:
     hostPid: true
 `),
@@ -30,25 +31,12 @@ experiments:
 			name: "Invalid Experiment (missing Parameters)",
 			contents: []byte(`
 experiments:
-- name: "Experiment 2"
-  namespace: "my-namespace"
-  type: "privileged_container"
-  labels:
-    key1: "value1"
-`),
-			expectError: true,
-		},
-		{
-			name: "Unsupported Experiment Type",
-			contents: []byte(`
-experiments:
-- name: "Experiment 3"
-  namespace: "my-namespace"
-  type: "unsupported_type"
-  labels:
-    key1: "value1"
-  parameters:
-    paramA: "ValueA"
+- metadata:
+    name: "Experiment 2"
+    namespace: "my-namespace"
+    type: "privileged_container"
+    labels:
+      key1: "value1"
 `),
 			expectError: true,
 		},

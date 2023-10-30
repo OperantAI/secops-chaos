@@ -6,7 +6,6 @@ package experiments
 import (
 	"context"
 	"fmt"
-
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
@@ -14,21 +13,28 @@ import (
 
 // Experiments is a list of all experiments
 var Experiments = []Experiment{
-	&PrivilegedContainer{},
+	&PrivilegedContainerExperimentConfig{},
+	&HostPathMountExperimentConfig{},
 }
 
 // Experiment is the interface for an experiment
 type Experiment interface {
-	// Name returns the name of the experiment
-	Name() string
-	// Category returns the MITRE/OWASP category of the experiment
-	Category() string
+	// Type returns the type of the experiment
+	Type() string
+	// Description describes the experiment in a brief sentence
+	Description() string
+	// Framework returns the attack framework e.g., MITRE/OWASP
+	Framework() string
+	// Tactic returns the attack tactic category
+	Tactic() string
+	// Technique returns the attack method
+	Technique() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error
+	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) (*Outcome, error)
+	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) error
+	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 }
 
 // Runner runs a set of experiments
@@ -41,9 +47,12 @@ type Runner struct {
 
 // Outcome is the result of an experiment
 type Outcome struct {
-	Experiment string `json:"experiment"`
-	Category   string `json:"category"`
-	Success    bool   `json:"success"`
+	Experiment  string `json:"experiment"`
+	Description string `json:"description"`
+	Framework   string `json:"framework"`
+	Tactic      string `json:"tactic"`
+	Technique   string `json:"technique"`
+	Success     bool   `json:"success"`
 }
 
 type JSONOutput struct {
@@ -52,7 +61,7 @@ type JSONOutput struct {
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experiments []string) *Runner {
+func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experimentFiles []string) *Runner {
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
@@ -63,20 +72,20 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
 	for _, e := range Experiments {
-		experimentMap[e.Name()] = e
+		experimentMap[e.Type()] = e
 	}
 
-	for _, e := range experiments {
-		experimentsConfig, err := parseExperimentConfig(e)
+	for _, e := range experimentFiles {
+		experimentConfigs, err := parseExperimentConfigs(e)
 		if err != nil {
-			output.WriteFatal("Failed to parse experiment config: %s", err)
+			output.WriteFatal("Failed to parse experiment configs: %s", err)
 		}
 
-		for _, eConf := range experimentsConfig.Experiments {
-			if _, exists := experimentMap[eConf.Type]; exists {
-				experimentConfigMap[eConf.Type] = &eConf
+		for i, eConf := range experimentConfigs {
+			if _, exists := experimentMap[eConf.Metadata.Type]; exists {
+				experimentConfigMap[eConf.Metadata.Name] = &experimentConfigs[i]
 			} else {
-				output.WriteError("Experiment %s does not exist", eConf.Type)
+				output.WriteError("Experiment %s does not exist", eConf.Metadata.Type)
 			}
 		}
 	}
@@ -91,27 +100,29 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
-	for _, e := range Experiments {
-		output.WriteInfo("Running experiment %s\n", e.Name())
-		if err := e.Run(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
-			output.WriteError("Experiment %s failed: %s", e.Name(), err)
+	for _, e := range r.experimentsConfig {
+		experiment := r.experiments[e.Metadata.Type]
+		output.WriteInfo("Running experiment %s\n", e.Metadata.Name)
+		if err := experiment.Run(r.ctx, r.client, e); err != nil {
+			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
 	}
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(writeJSON bool) {
-	table := output.NewTable([]string{"Experiment", "Category", "Result"})
+	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
 	outcomes := []*Outcome{}
-	for _, e := range Experiments {
-		outcome, err := e.Verify(r.ctx, r.client, r.experimentsConfig[e.Name()])
+	for _, e := range r.experimentsConfig {
+		experiment := r.experiments[e.Metadata.Type]
+		outcome, err := experiment.Verify(r.ctx, r.client, e)
 		if err != nil {
-			output.WriteError("Verifier %s failed: %s", e.Name(), err)
+			output.WriteError("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			table.AddRow([]string{outcome.Experiment, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
+			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Framework, outcome.Tactic, outcome.Technique, fmt.Sprintf("%t", outcome.Success)})
 		}
 	}
 	if writeJSON {
@@ -130,10 +141,11 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
-	for _, e := range r.experiments {
-		output.WriteInfo("Cleaning up experiment %s\n", e.Name())
-		if err := e.Cleanup(r.ctx, r.client, r.experimentsConfig[e.Name()]); err != nil {
-			output.WriteError("Experiment %s cleanup failed: %s", e.Name(), err)
+	for _, e := range r.experimentsConfig {
+		output.WriteInfo("Cleaning up experiment %s\n", e.Metadata.Name)
+		experiment := r.experiments[e.Metadata.Type]
+		if err := experiment.Cleanup(r.ctx, r.client, e); err != nil {
+			output.WriteError("Experiment %s cleanup failed: %s", e.Metadata.Name, err)
 		}
 
 	}

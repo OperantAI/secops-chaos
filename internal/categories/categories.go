@@ -1,7 +1,13 @@
 package categories
 
-// mitreCategories struct to hold MITRE categories
-type mitreCategories struct {
+type Framework string
+
+const (
+	Mitre Framework = "MITRE"
+)
+
+// mitreTactics struct to hold MITRE categories
+type mitreTactics struct {
 	InitialAccess       InitialAccess
 	Execution           Execution
 	Persistence         Persistence
@@ -14,8 +20,8 @@ type mitreCategories struct {
 
 type mitreEntry struct {
 	CategoryID string
-	Category   string
-	Name       string
+	Tactic     string
+	Technique  string
 }
 
 type InitialAccess struct {
@@ -86,17 +92,17 @@ type LateralMovement struct {
 
 // Exported instances of the categories
 var (
-	MITRE mitreCategories
+	MITRE mitreTactics
 )
 
 func init() {
-	MITRE = mitreCategories{
+	MITRE = mitreTactics{
 		InitialAccess{
-			UsingCloudCredentials:       mitreEntry{"TA0001", "Intial Access", "Using Cloud Credentials"},
-			CompromisedImagesInRegistry: mitreEntry{"TA0001", "Intial Access", "Compromised Images in Registry"},
-			KubeConfigFile:              mitreEntry{"TA0001", "Intial Access", "Kube Config File"},
-			ApplicationVulnerability:    mitreEntry{"TA0001", "Intial Access", "Application Vulnerability"},
-			ExposedSensitiveInterfaces:  mitreEntry{"TA0001", "Intial Access", "Exposed Sensitive Interfaces"},
+			UsingCloudCredentials:       mitreEntry{"TA0001", "Initial Access", "Using Cloud Credentials"},
+			CompromisedImagesInRegistry: mitreEntry{"TA0001", "Initial Access", "Compromised Images in Registry"},
+			KubeConfigFile:              mitreEntry{"TA0001", "Initial Access", "Kube Config File"},
+			ApplicationVulnerability:    mitreEntry{"TA0001", "Initial Access", "Application Vulnerability"},
+			ExposedSensitiveInterfaces:  mitreEntry{"TA0001", "Initial Access", "Exposed Sensitive Interfaces"},
 		},
 		Execution{
 			ExecIntoContainer:           mitreEntry{"TA0002", "Execution", "Exec Into Container"},
@@ -134,7 +140,7 @@ func init() {
 			MaliciousAdmissionController:               mitreEntry{"TA0006", "Credentials", "Malicious Admission Controller"},
 		},
 		Discovery{
-			AccessTheK8sApiServer:     mitreEntry{"TA0007", "Discovery", "Access The K8s Api Server"},
+			AccessTheK8sApiServer:     mitreEntry{"TA0007", "Discovery", "Access The K8s API Server"},
 			AccessKubeletAPI:          mitreEntry{"TA0007", "Discovery", "Access Kubelet API"},
 			NetworkMapping:            mitreEntry{"TA0007", "Discovery", "Network Mapping"},
 			AccessKubernetesDashboard: mitreEntry{"TA0007", "Discovery", "Access Kubernetes Dashboard"},
