@@ -33,7 +33,7 @@ type Experiment interface {
 	// Run runs the experiment, returning an error if it fails
 	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) (*verifier.Outcome, error)
+	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
 	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 }
