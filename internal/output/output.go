@@ -1,11 +1,12 @@
 package output
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
+	ltable "github.com/charmbracelet/lipgloss/table"
 )
 
 const (
@@ -43,12 +44,37 @@ func WriteFatal(msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func WriteTable(headers []string, rows [][]string) {
-	t := table.New().
+type table struct {
+	headers []string
+	rows    [][]string
+}
+
+// NewTable creates a new table with the given headers
+func NewTable(headers []string) *table {
+	return &table{headers: headers}
+}
+
+// AddRow adds a row to the table
+func (t *table) AddRow(row []string) {
+	t.rows = append(t.rows, row)
+}
+
+// Render renders the table, printing it to stdout
+func (t *table) Render() {
+	tbl := ltable.New().
 		Border(lipgloss.NormalBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(TableBorderColor)).
-		Headers(headers...).
-		Rows(rows...)
+		Headers(t.headers...).
+		Rows(t.rows...)
 
-	fmt.Println(t)
+	fmt.Println(tbl)
+}
+
+// WriteJSON writes the given output as pretty printed JSON to stdout
+func WriteJSON(output interface{}) {
+	jsonOutput, err := json.MarshalIndent(output, "", "    ")
+	if err != nil {
+		WriteError("Failed to marshal JSON: %s", err)
+	}
+	fmt.Println(string(jsonOutput))
 }
