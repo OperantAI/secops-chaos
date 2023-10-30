@@ -5,9 +5,11 @@ package experiments
 
 import (
 	"context"
+
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/verifier"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +24,7 @@ type PrivilegedContainerExperimentConfig struct {
 	Parameters PrivilegedContainer `yaml:"parameters"`
 }
 
+// PrivilegedContainer is an experiment that creates a deployment with a privileged container
 type PrivilegedContainer struct {
 	Privileged  bool `yaml:"privileged"`
 	HostPid     bool `yaml:"host_pid"`
@@ -55,6 +58,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	if err != nil {
 		return err
 	}
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: privilegedContainerExperimentConfig.Metadata.Name,
@@ -126,7 +130,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error) {
+func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var privilegedContainerExperimentConfig PrivilegedContainerExperimentConfig
 	err := mapstructure.Decode(experimentConfig, &privilegedContainerExperimentConfig)
 	if err != nil {
@@ -137,6 +141,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 		return nil, err
 	}
 	params := privilegedContainerExperimentConfig.Parameters
+
 	outcome := &Outcome{
 		Experiment:  privilegedContainerExperimentConfig.Metadata.Name,
 		Description: privilegedContainerExperimentConfig.Description(),
@@ -146,32 +151,27 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 		Success:     false,
 	}
 
+	verifier := verifier.New(p.Name(), p.Category())
 	if params.HostPid {
-		if deployment.Spec.Template.Spec.HostPID {
-			outcome.Success = true
-			return outcome, nil
-		}
+		verifier.AssertEqual(params.HostPid, deployment.Spec.Template.Spec.HostPID)
 	}
 
 	if params.HostNetwork {
-		if deployment.Spec.Template.Spec.HostNetwork {
-			outcome.Success = true
-			return outcome, nil
-		}
+		verifier.AssertEqual(params.HostNetwork, deployment.Spec.Template.Spec.HostNetwork)
 	}
 
 	if params.Privileged {
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
 			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
-				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
-					outcome.Success = true
-					return outcome, nil
-				}
+				verifier.AssertEqual(
+					&params.Privileged,
+					*deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged,
+				)
 			}
 		}
 	}
 
-	return outcome, nil
+	return verifier.GetOutcome(), nil
 }
 
 func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {

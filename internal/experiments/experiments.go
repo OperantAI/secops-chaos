@@ -5,9 +5,10 @@ package experiments
 
 import (
 	"context"
-	"fmt"
+
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
+	"github.com/operantai/secops-chaos/internal/verifier"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -32,7 +33,7 @@ type Experiment interface {
 	// Run runs the experiment, returning an error if it fails
 	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error)
+	Verify(ctx context.Context, client *kubernetes.Clientset, config *ExperimentConfig) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
 	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 }
@@ -43,21 +44,6 @@ type Runner struct {
 	client            *kubernetes.Clientset
 	experiments       map[string]Experiment
 	experimentsConfig map[string]*ExperimentConfig
-}
-
-// Outcome is the result of an experiment
-type Outcome struct {
-	Experiment  string `json:"experiment"`
-	Description string `json:"description"`
-	Framework   string `json:"framework"`
-	Tactic      string `json:"tactic"`
-	Technique   string `json:"technique"`
-	Success     bool   `json:"success"`
-}
-
-type JSONOutput struct {
-	K8sVersion string     `json:"k8s_version"`
-	Results    []*Outcome `json:"results"`
 }
 
 // NewRunner returns a new Runner
@@ -122,7 +108,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Framework, outcome.Tactic, outcome.Technique, fmt.Sprintf("%t", outcome.Success)})
+			table.AddRow([]string{outcome.Experiment, outcome.Category, outcome.Result.String()})
 		}
 	}
 	if writeJSON {
@@ -130,7 +116,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
-		output.WriteJSON(JSONOutput{
+		output.WriteJSON(verifier.JSONOutput{
 			K8sVersion: k8sVersion.String(),
 			Results:    outcomes,
 		})
