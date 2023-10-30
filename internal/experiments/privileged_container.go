@@ -5,7 +5,6 @@ package experiments
 
 import (
 	"context"
-	"fmt"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/operantai/secops-chaos/internal/categories"
@@ -38,8 +37,16 @@ func (p *PrivilegedContainerExperimentConfig) Description() string {
 	return "This experiment attempts to run a privileged container in a namespace"
 }
 
-func (p *PrivilegedContainerExperimentConfig) Category() string {
-	return fmt.Sprintf("[MITRE] %s", categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Name)
+func (p *PrivilegedContainerExperimentConfig) Technique() string {
+	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Technique
+}
+
+func (p *PrivilegedContainerExperimentConfig) Tactic() string {
+	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Tactic
+}
+
+func (p *PrivilegedContainerExperimentConfig) Framework() string {
+	return string(categories.Mitre)
 }
 
 func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
@@ -133,7 +140,9 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	outcome := &Outcome{
 		Experiment:  privilegedContainerExperimentConfig.Metadata.Name,
 		Description: privilegedContainerExperimentConfig.Description(),
-		Category:    privilegedContainerExperimentConfig.Category(),
+		Framework:   privilegedContainerExperimentConfig.Framework(),
+		Tactic:      privilegedContainerExperimentConfig.Tactic(),
+		Technique:   privilegedContainerExperimentConfig.Technique(),
 		Success:     false,
 	}
 

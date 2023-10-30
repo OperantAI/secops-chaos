@@ -23,8 +23,12 @@ type Experiment interface {
 	Type() string
 	// Description describes the experiment in a brief sentence
 	Description() string
-	// Category returns the MITRE/OWASP category of the experiment
-	Category() string
+	// Framework returns the attack framework e.g., MITRE/OWASP
+	Framework() string
+	// Tactic returns the attack tactic category
+	Tactic() string
+	// Technique returns the attack method
+	Technique() string
 	// Run runs the experiment, returning an error if it fails
 	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
@@ -45,7 +49,9 @@ type Runner struct {
 type Outcome struct {
 	Experiment  string `json:"experiment"`
 	Description string `json:"description"`
-	Category    string `json:"category"`
+	Framework   string `json:"framework"`
+	Tactic      string `json:"tactic"`
+	Technique   string `json:"technique"`
 	Success     bool   `json:"success"`
 }
 
@@ -105,7 +111,7 @@ func (r *Runner) Run() {
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(writeJSON bool) {
-	table := output.NewTable([]string{"Experiment", "Description", "Category", "Result"})
+	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
 	outcomes := []*Outcome{}
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
@@ -116,7 +122,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
+			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Framework, outcome.Tactic, outcome.Technique, fmt.Sprintf("%t", outcome.Success)})
 		}
 	}
 	if writeJSON {

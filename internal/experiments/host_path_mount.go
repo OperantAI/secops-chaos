@@ -36,8 +36,16 @@ func (p *HostPathMountExperimentConfig) Description() string {
 	return "This experiment attempts to mount a sensitive host filesystem path into a container"
 }
 
-func (p *HostPathMountExperimentConfig) Category() string {
-	return fmt.Sprintf("[MITRE] %s", categories.MITRE.PrivilegeEscalation.HostPathMount.Name)
+func (p *HostPathMountExperimentConfig) Technique() string {
+	return categories.MITRE.PrivilegeEscalation.HostPathMount.Technique
+}
+
+func (p *HostPathMountExperimentConfig) Tactic() string {
+	return categories.MITRE.PrivilegeEscalation.HostPathMount.Tactic
+}
+
+func (p *HostPathMountExperimentConfig) Framework() string {
+	return string(categories.Mitre)
 }
 
 func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
@@ -119,7 +127,9 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kube
 	outcome := &Outcome{
 		Experiment:  hostPathMountExperimentConfig.Metadata.Name,
 		Description: hostPathMountExperimentConfig.Description(),
-		Category:    hostPathMountExperimentConfig.Category(),
+		Framework:   hostPathMountExperimentConfig.Framework(),
+		Tactic:      hostPathMountExperimentConfig.Tactic(),
+		Technique:   hostPathMountExperimentConfig.Technique(),
 		Success:     false,
 	}
 	listOptions := metav1.ListOptions{
