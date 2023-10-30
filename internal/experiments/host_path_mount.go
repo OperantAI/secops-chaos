@@ -139,10 +139,22 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kube
 	if err != nil {
 		return nil, err
 	}
-	if len(pods.Items) == 1 && pods.Items[0].Spec.Volumes[0].HostPath.Path == params.HostPath.Path && pods.Items[0].Status.Phase == "Running" {
-		outcome.Success = true
+	if len(pods.Items) == 1 {
+		outcome.Success = checkVolumes(pods.Items[0], params.HostPath.Path)
 	}
 	return outcome, nil
+}
+
+func checkVolumes(pod corev1.Pod, volumePath string) bool {
+	if pod.Status.Phase == "Running" {
+		volumes := pod.Spec.Volumes
+		for _, v := range volumes {
+			if v.HostPath != nil && v.HostPath.Path == volumePath {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
