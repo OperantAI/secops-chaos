@@ -75,9 +75,9 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 			output.WriteFatal("Failed to parse experiment configs: %s", err)
 		}
 
-		for _, eConf := range experimentConfigs {
+		for i, eConf := range experimentConfigs {
 			if _, exists := experimentMap[eConf.Metadata.Type]; exists {
-				experimentConfigMap[eConf.Metadata.Type] = &eConf
+				experimentConfigMap[eConf.Metadata.Name] = &experimentConfigs[i]
 			} else {
 				output.WriteError("Experiment %s does not exist", eConf.Metadata.Type)
 			}
