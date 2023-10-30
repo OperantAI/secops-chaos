@@ -1,3 +1,6 @@
+/*
+Copyright 2023 Operant AI
+*/
 package experiments
 
 import (

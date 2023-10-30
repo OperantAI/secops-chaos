@@ -49,9 +49,4 @@ func init() {
 
 	// Output the results in JSON format
 	verifyCmd.Flags().BoolP("json", "j", false, "Output results in JSON format")
-
-	// Define the namespace(s) to run the experiment in
-	verifyCmd.Flags().StringP("namespace", "n", "", "Namespace to run experiment in")
-	verifyCmd.Flags().BoolP("all", "a", false, "Run experiment in all namespaces")
-	verifyCmd.MarkFlagsMutuallyExclusive("namespace", "all")
 }
