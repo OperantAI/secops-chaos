@@ -49,7 +49,13 @@ func TestVerifier_AssertEqual(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			verifier := New("test_experiment", "test_category")
+			verifier := New(
+				"test_experiment",
+				"test_description",
+				"test_framework",
+				"test_tactic",
+				"test_technique",
+			)
 
 			result := verifier.AssertEqual(
 				tt.actual.(*v1.Pod).ObjectMeta.Name,
