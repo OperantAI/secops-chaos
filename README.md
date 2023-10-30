@@ -1,5 +1,7 @@
 # secops-chaos
 
+[![Build](https://github.com/OperantAI/secops-chaos/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/OperantAI/secops-chaos/actions/workflows/build.yml)
+
 ### Usage
 
 ``` sh

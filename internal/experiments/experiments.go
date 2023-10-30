@@ -5,18 +5,19 @@ package experiments
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
 )
 
+// Experiments is a list of all experiments
 var Experiments = []Experiment{
 	&PrivilegedContainerExperimentConfig{},
 	&HostPathMountExperimentConfig{},
 }
 
+// Experiment is the interface for an experiment
 type Experiment interface {
 	// Type returns the type of the experiment
 	Type() string
@@ -40,16 +41,17 @@ type Runner struct {
 	experimentsConfig map[string]*ExperimentConfig
 }
 
-type JSONOutput struct {
-	K8sVersion string     `json:"k8s_version"`
-	Results    []*Outcome `json:"results"`
-}
-
+// Outcome is the result of an experiment
 type Outcome struct {
 	Experiment  string `json:"experiment"`
 	Description string `json:"description"`
 	Category    string `json:"category"`
 	Success     bool   `json:"success"`
+}
+
+type JSONOutput struct {
+	K8sVersion string     `json:"k8s_version"`
+	Results    []*Outcome `json:"results"`
 }
 
 // NewRunner returns a new Runner
@@ -102,9 +104,8 @@ func (r *Runner) Run() {
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
-func (r *Runner) RunVerifiers(outputJSON bool) {
-	headers := []string{"Experiment", "Description", "Category", "Result"}
-	rows := [][]string{}
+func (r *Runner) RunVerifiers(writeJSON bool) {
+	table := output.NewTable([]string{"Experiment", "Description", "Category", "Result"})
 	outcomes := []*Outcome{}
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
@@ -112,29 +113,24 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 		if err != nil {
 			output.WriteError("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
-		if outputJSON {
+		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			rows = append(rows, []string{outcome.Experiment, outcome.Description, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
+			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
 		}
 	}
-	if outputJSON {
+	if writeJSON {
 		k8sVersion, err := k8s.GetK8sVersion(r.client)
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
-		out := JSONOutput{
+		output.WriteJSON(JSONOutput{
 			K8sVersion: k8sVersion.String(),
 			Results:    outcomes,
-		}
-		jsonOutput, err := json.MarshalIndent(out, "", "    ")
-		if err != nil {
-			output.WriteError("Failed to marshal JSON: %s", err)
-		}
-		fmt.Println(string(jsonOutput))
+		})
 		return
 	}
-	output.WriteTable(headers, rows)
+	table.Render()
 }
 
 // Cleanup cleans up all experiments in the Runner
