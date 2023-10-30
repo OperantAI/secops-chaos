@@ -5,6 +5,7 @@ package experiments
 
 import (
 	"context"
+	"fmt"
 	"github.com/operantai/secops-chaos/internal/categories"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,6 +30,10 @@ type HostPath struct {
 
 func (p *HostPathMountExperimentConfig) Type() string {
 	return "host_path_mount"
+}
+
+func (p *HostPathMountExperimentConfig) Description() string {
+	return "This experiment attempts to mount a sensitive host filesystem path into a container"
 }
 
 func (p *HostPathMountExperimentConfig) Category() string {
@@ -110,18 +115,21 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kube
 	if err != nil {
 		return nil, err
 	}
-	deployment, err := client.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Get(ctx, hostPathMountExperimentConfig.Metadata.Name, metav1.GetOptions{})
+	params := hostPathMountExperimentConfig.Parameters
+	outcome := &Outcome{
+		Experiment:  hostPathMountExperimentConfig.Metadata.Name,
+		Description: hostPathMountExperimentConfig.Description(),
+		Category:    hostPathMountExperimentConfig.Category(),
+		Success:     false,
+	}
+	listOptions := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s", hostPathMountExperimentConfig.Metadata.Name),
+	}
+	pods, err := client.CoreV1().Pods(hostPathMountExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}
-	params := hostPathMountExperimentConfig.Parameters
-	outcome := &Outcome{
-		Experiment: hostPathMountExperimentConfig.Metadata.Name,
-		Category:   hostPathMountExperimentConfig.Category(),
-		Success:    false,
-	}
-	// TODO check that the pod is up
-	if deployment.Spec.Template.Spec.Volumes[0].HostPath.Path == params.HostPath.Path {
+	if len(pods.Items) == 1 && pods.Items[0].Spec.Volumes[0].HostPath.Path == params.HostPath.Path && pods.Items[0].Status.Phase == "Running" {
 		outcome.Success = true
 	}
 	return outcome, nil

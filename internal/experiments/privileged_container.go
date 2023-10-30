@@ -33,6 +33,10 @@ func (p *PrivilegedContainerExperimentConfig) Type() string {
 	return "privileged_container"
 }
 
+func (p *PrivilegedContainerExperimentConfig) Description() string {
+	return "This experiment attempts to run a privileged container in a namespace"
+}
+
 func (p *PrivilegedContainerExperimentConfig) Category() string {
 	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Name
 }
@@ -126,9 +130,10 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	}
 	params := privilegedContainerExperimentConfig.Parameters
 	outcome := &Outcome{
-		Experiment: privilegedContainerExperimentConfig.Metadata.Name,
-		Category:   privilegedContainerExperimentConfig.Category(),
-		Success:    false,
+		Experiment:  privilegedContainerExperimentConfig.Metadata.Name,
+		Description: privilegedContainerExperimentConfig.Description(),
+		Category:    privilegedContainerExperimentConfig.Category(),
+		Success:     false,
 	}
 
 	if params.HostPid {

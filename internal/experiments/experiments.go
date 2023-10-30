@@ -20,6 +20,8 @@ var Experiments = []Experiment{
 type Experiment interface {
 	// Type returns the type of the experiment
 	Type() string
+	// Description describes the experiment in a brief sentence
+	Description() string
 	// Category returns the MITRE/OWASP category of the experiment
 	Category() string
 	// Run runs the experiment, returning an error if it fails
@@ -44,9 +46,10 @@ type JSONOutput struct {
 }
 
 type Outcome struct {
-	Experiment string `json:"experiment"`
-	Category   string `json:"category"`
-	Success    bool   `json:"success"`
+	Experiment  string `json:"experiment"`
+	Description string `json:"description"`
+	Category    string `json:"category"`
+	Success     bool   `json:"success"`
 }
 
 // NewRunner returns a new Runner
@@ -100,7 +103,7 @@ func (r *Runner) Run() {
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(outputJSON bool) {
-	headers := []string{"Experiment", "Category", "Result"}
+	headers := []string{"Experiment", "Description", "Category", "Result"}
 	rows := [][]string{}
 	outcomes := []*Outcome{}
 	for _, e := range r.experimentsConfig {
@@ -112,7 +115,7 @@ func (r *Runner) RunVerifiers(outputJSON bool) {
 		if outputJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			rows = append(rows, []string{outcome.Experiment, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
+			rows = append(rows, []string{outcome.Experiment, outcome.Description, outcome.Category, fmt.Sprintf("%t", outcome.Success)})
 		}
 	}
 	if outputJSON {
