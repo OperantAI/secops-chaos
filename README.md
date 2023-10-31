@@ -1,7 +1,7 @@
 <div align="center">
-  <a href="">[![Build][build-shield]][build-url]</a>
-  <a href="">[![Issues][issues-shield]][issues-url]</a>
-  <a href="">[![License][license-shield]][license-url]</a>
+  [![Build][build-shield]][build-url]
+  [![Issues][issues-shield]][issues-url]
+  [![License][license-shield]][license-url]
 </div>
 <br />
 <div align="center">
