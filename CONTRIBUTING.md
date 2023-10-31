@@ -97,7 +97,11 @@ Enhancement suggestions are tracked as [GitHub issues][issues-url].
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+5. Open a Pull Request against the `dev` branch
+6. Link Pull Request to any relevant issues
+6. Address review comments
+
+Please ensure you have unit tests for key pieces of code.
 
 [issues-url]: https://github.com/operantai/secops-chaos/issues
 [documentation-url]: https://github.com/operantai/secops-chaos/blob/main/README.md
