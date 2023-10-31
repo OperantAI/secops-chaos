@@ -24,7 +24,7 @@
   </p>
 </div>
 
-`secops-chaos` is a Chaos Engineering tool focused on Security at Runtime. The tool was designed to discover security weaknesses in Cloud Native environments.
+**secops-chaos** is a Chaos Engineering tool focused on Security at Runtime. The tool was designed to discover security weaknesses in Cloud Native environments.
 
 ## Getting Started
 
