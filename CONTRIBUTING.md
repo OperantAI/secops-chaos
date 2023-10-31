@@ -99,7 +99,7 @@ Enhancement suggestions are tracked as [GitHub issues][issues-url].
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request against the `dev` branch
 6. Link Pull Request to any relevant issues
-6. Address review comments
+7. Address review comments
 
 Please ensure you have unit tests for key pieces of code.
 
