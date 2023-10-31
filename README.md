@@ -34,25 +34,30 @@
 go install github.com/operantai/secops-chaos@latest
 ```
 
+Go will automatically install it in your `$GOPATH/bin` directory, which should be in your `$PATH`.
+
 ### Usage
 
+The design of **secops-chaos** can be broken down into two components:
+
+- **Experiments** - Experiments actively try to run something to discover if a security weakness is present.
+- **Verifiers** - Verifiers look at the results of an Experiment and reports their outcome.
+
+The secops-chaos CLI mirrors this, and exposes `run` & `verify` commands. To start, you need to run an experiment:
+
 ``` sh
-Usage:
-  secops-chaos [command]
-
-Available Commands:
-  clean       Clean up after an experiment run
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  run         Run an experiment
-  verify      Verify the outcome of an experiment
-  version     Output CLI version information
-
-Flags:
-  -h, --help   help for secops-chaos
-
-Use "secops-chaos [command] --help" for more information about a command.
+secops-chaos run -f experiments/host_path_volume.yaml
 ```
+
+Once you've successfully run the experiment, you can verify if it was sucessful or not:
+
+```sh
+secops-chaos verify -f experiments/host_path_volume.yaml
+```
+
+You can also output a JSON with the verifier results by using the `-j` flag.
+
+For a full list of experiments you can run, see the [experiments][experiments-dir-url] directory.
 
 ## Contributing
 
@@ -62,5 +67,6 @@ Please read the contribution guidelines, [here][contributing-url].
 
 Distributed under the [Apache License 2.0][license-url].
 
+[experiments-dir-url]: https://github.com/operantai/secops-chaos/blob/main/experiments
 [contributing-url]: https://github.com/operantai/secops-chaos/blob/main/CONTRIBUTING.md
 [license-url]: https://github.com/operantai/secops-chaos/blob/main/LICENSE
