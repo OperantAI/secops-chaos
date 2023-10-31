@@ -1,7 +1,13 @@
 <div align="center">
-  [![Build][build-shield]][build-url]
-  [![Issues][issues-shield]][issues-url]
-  [![License][license-shield]][license-url]
+  <a href="https://github.com/OperantAI/secops-chaos/actions/workflows/build.yml">
+    <img src="https://github.com/OperantAI/secops-chaos/actions/workflows/build.yml/badge.svg?branch=main">
+  </a>
+  <a href="https://github.com/operantai/secops-chaos/issues">
+    <img src="https://img.shields.io/github/issues/operantai/secops-chaos">
+  </a>
+  <a href ="https://github.com/operantai/secops-chaos/issues">
+    <img src="https://img.shields.io/github/issues/operantai/secops-chaos">
+  </a>
 </div>
 <br />
 <div align="center">
@@ -12,9 +18,9 @@
     <a href="https://github.com/operantai/secops-chaos/blob/main/README.md"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/operantai/secops-chaos/issues">Report Bug</a>
+    <a href="https://github.com/operantai/secops-chaos/blob/main/CONTRIBUTING.md#reporting-bugs">Report Bug</a>
     ·
-    <a href="https://github.com/operantai/secops-chaos/issues">Request Feature</a>
+    <a href="https://github.com/operantai/secops-chaos/blob/main/CONTRIBUTING.md#suggesting-enhancements">Request Feature</a>
   </p>
 </div>
 
@@ -56,10 +62,4 @@ Please read the contribution guidelines, [here][contributing-url].
 
 Distributed under the [Apache License 2.0][license-url].
 
-[build-shield]: https://github.com/OperantAI/secops-chaos/actions/workflows/build.yml/badge.svg?branch=main
-[build-url]: https://github.com/OperantAI/secops-chaos/actions/workflows/build.yml
-[issues-shield]: https://img.shields.io/github/issues/operantai/secops-chaos
-[issues-url]: https://github.com/operantai/secops-chaos/issues
-[license-shield]: https://img.shields.io/github/license/operantai/secops-chaos
-[license-url]: https://github.com/operantai/secops-chaos/blob/master/LICENSE
 [contributing-url]: https://github.com/operantai/secops-chaos/blob/main/CONTRIBUTING.md
