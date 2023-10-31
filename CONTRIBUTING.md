@@ -7,7 +7,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 > - Star the project
-> - Refer this project in your project's readme
+> - Refer to this project in your project's readme
 > - Mention the project at local meetups and tell your friends/colleagues
 
 <!-- omit in toc -->
