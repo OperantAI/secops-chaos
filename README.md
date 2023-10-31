@@ -13,7 +13,7 @@
 <div align="center">
   <h3 align="center">secops-chaos</h3>
   <p align="center">
-    Chaos-Driven Security Improvement
+    Security-focused Chaos Experiments for DevSecOps Teams
     <br />
     <a href="https://github.com/operantai/secops-chaos/blob/main/README.md"><strong>Explore the docs »</strong></a>
     <br />
