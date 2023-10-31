@@ -63,3 +63,4 @@ Please read the contribution guidelines, [here][contributing-url].
 Distributed under the [Apache License 2.0][license-url].
 
 [contributing-url]: https://github.com/operantai/secops-chaos/blob/main/CONTRIBUTING.md
+[license-url]: https://github.com/operantai/secops-chaos/blob/main/LICENSE
