@@ -5,8 +5,8 @@
   <a href="https://github.com/operantai/secops-chaos/issues">
     <img src="https://img.shields.io/github/issues/operantai/secops-chaos">
   </a>
-  <a href ="https://github.com/operantai/secops-chaos/issues">
-    <img src="https://img.shields.io/github/issues/operantai/secops-chaos">
+  <a href ="https://github.com/operantai/secops-chaos/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/operantai/secops-chaos">
   </a>
 </div>
 <br />
@@ -28,7 +28,7 @@
 
 ## Getting Started
 
-### installation
+### Installation
 
 ``` sh
 go install github.com/operantai/secops-chaos@latest
