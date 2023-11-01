@@ -147,18 +147,21 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	)
 
 	if params.HostPid {
+		verifier.Fail("RunAsRoot")
 		if deployment.Spec.Template.Spec.HostPID {
 			verifier.Success("HostPID")
 		}
 	}
 
 	if params.HostNetwork {
+		verifier.Fail("RunAsRoot")
 		if deployment.Spec.Template.Spec.HostNetwork {
 			verifier.Success("HostNetwork")
 		}
 	}
 
 	if params.RunAsRoot {
+		verifier.Fail("RunAsRoot")
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
 			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser != nil {
 				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser == 0 {
@@ -169,6 +172,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	}
 
 	if params.Privileged {
+		verifier.Fail("Privileged")
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
 			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
 				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {

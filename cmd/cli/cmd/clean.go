@@ -15,15 +15,6 @@ var cleanCmd = &cobra.Command{
 	Short: "Clean up after an experiment run",
 	Long:  "Clean up after an experiment run",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Read the flags
-		namespace, err := cmd.Flags().GetString("namespace")
-		if err != nil {
-			output.WriteError("Error reading namespace flag: %v", err)
-		}
-		allNamespaces, err := cmd.Flags().GetBool("all")
-		if err != nil {
-			output.WriteError("Error reading all flag: %v", err)
-		}
 		files, err := cmd.Flags().GetStringSlice("file")
 		if err != nil {
 			output.WriteError("Error reading file flag: %v", err)
@@ -31,7 +22,7 @@ var cleanCmd = &cobra.Command{
 
 		// Create a new experiment runner and clean up
 		ctx := cmd.Context()
-		er := experiments.NewRunner(ctx, namespace, allNamespaces, files)
+		er := experiments.NewRunner(ctx, files)
 		er.Cleanup()
 	},
 }

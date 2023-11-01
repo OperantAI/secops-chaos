@@ -3,6 +3,8 @@ package verifier
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Verifier is used to verify the results of an experiment
@@ -18,14 +20,7 @@ type Outcome struct {
 	Tactic      string          `json:"tactic"`
 	Technique   string          `json:"technique"`
 	Result      map[string]bool `json:"result"`
-	// Result      Result `json:"result"`
 }
-
-// Result is the result of an experiment
-//type Result struct {
-//	Successful int `json:"successful"`
-//	Total      int `json:"total"`
-//}
 
 // JSONOutput is a pretty-printed JSON output of the verifier
 type JSONOutput struct {
@@ -42,6 +37,7 @@ func New(experiment, description, framework, tactic, technique string) *Verifier
 			Framework:   framework,
 			Tactic:      tactic,
 			Technique:   technique,
+			Result:      make(map[string]bool),
 		},
 	}
 }
@@ -84,13 +80,19 @@ func (v *Verifier) GetOutcome() *Outcome {
 // String returns a string representation of the Verifier result
 func (r *Outcome) GetResultString() string {
 	b := new(bytes.Buffer)
+
+	// Define output styles
+	successColour := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+	failColour := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
+
+	// For each result in the Outcome, add a line to the output
 	for name, result := range r.Result {
 		if result {
-			fmt.Fprintf(b, "%s: %s\n", name, "success")
+			fmt.Fprintf(b, "%s: %s\n", name, successColour.Render("success"))
 			continue
 		}
-		fmt.Fprintf(b, "%s: %s\n", name, "fail")
+
+		fmt.Fprintf(b, "%s: %s\n", name, failColour.Render("fail"))
 	}
 	return b.String()
-	// return fmt.Sprintf("%d/%d", r.Successful, r.Total)
 }

@@ -47,7 +47,7 @@ type Runner struct {
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experimentFiles []string) *Runner {
+func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
