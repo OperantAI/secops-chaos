@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/verifier"
+
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -138,7 +140,7 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error) {
+func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
