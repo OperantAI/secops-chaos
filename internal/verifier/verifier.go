@@ -1,28 +1,31 @@
 package verifier
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 // Verifier is used to verify the results of an experiment
 type Verifier struct {
-	outcome       *Outcome
-	numAssertions int
+	outcome *Outcome
 }
 
 // Outcome is the result of an experiment
 type Outcome struct {
-	Experiment  string `json:"experiment"`
-	Description string `json:"description"`
-	Framework   string `json:"framework"`
-	Tactic      string `json:"tactic"`
-	Technique   string `json:"technique"`
-	Result      Result `json:"result"`
+	Experiment  string          `json:"experiment"`
+	Description string          `json:"description"`
+	Framework   string          `json:"framework"`
+	Tactic      string          `json:"tactic"`
+	Technique   string          `json:"technique"`
+	Result      map[string]bool `json:"result"`
+	// Result      Result `json:"result"`
 }
 
 // Result is the result of an experiment
-type Result struct {
-	Successful int `json:"successful"`
-	Total      int `json:"total"`
-}
+//type Result struct {
+//	Successful int `json:"successful"`
+//	Total      int `json:"total"`
+//}
 
 // JSONOutput is a pretty-printed JSON output of the verifier
 type JSONOutput struct {
@@ -44,27 +47,33 @@ func New(experiment, description, framework, tactic, technique string) *Verifier
 }
 
 // AssertEqual compares the actual and expected values and sets the Result accordingly
-func (v *Verifier) AssertEqual(actual, expected interface{}) bool {
-	v.numAssertions++
-
+func (v *Verifier) AssertEqual(test string, actual, expected interface{}) bool {
 	// Update the Result based on the assertion
 	if actual == expected {
-		v.outcome.Result.Successful++
+		v.Success(test)
+	} else {
+		v.Fail(test)
 	}
-	v.outcome.Result.Total++
 
 	return actual == expected
 }
 
 // Success increments the successful and total counters
-func (v *Verifier) Success() {
-	v.outcome.Result.Successful++
-	v.outcome.Result.Total++
+func (v *Verifier) Success(test string) {
+	if test == "" {
+		v.outcome.Result[v.outcome.Experiment] = true
+	} else {
+		v.outcome.Result[test] = true
+	}
 }
 
 // Fail increments the total counter
-func (v *Verifier) Fail() {
-	v.outcome.Result.Total++
+func (v *Verifier) Fail(test string) {
+	if test == "" {
+		v.outcome.Result[v.outcome.Experiment] = false
+	} else {
+		v.outcome.Result[test] = false
+	}
 }
 
 // GetOutcome returns the Outcome of the Verifier
@@ -73,6 +82,15 @@ func (v *Verifier) GetOutcome() *Outcome {
 }
 
 // String returns a string representation of the Verifier result
-func (r *Result) String() string {
-	return fmt.Sprintf("%d/%d", r.Successful, r.Total)
+func (r *Outcome) GetResultString() string {
+	b := new(bytes.Buffer)
+	for name, result := range r.Result {
+		if result {
+			fmt.Fprintf(b, "%s: %s\n", name, "success")
+			continue
+		}
+		fmt.Fprintf(b, "%s: %s\n", name, "fail")
+	}
+	return b.String()
+	// return fmt.Sprintf("%d/%d", r.Successful, r.Total)
 }

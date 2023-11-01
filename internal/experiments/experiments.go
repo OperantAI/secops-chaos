@@ -114,7 +114,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 				outcome.Framework,
 				outcome.Tactic,
 				outcome.Technique,
-				outcome.Result.String(),
+				outcome.GetResultString(),
 			})
 		}
 	}
