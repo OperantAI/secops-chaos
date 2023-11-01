@@ -57,10 +57,12 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	experimentMap := make(map[string]Experiment)
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
+	// Create a map of experiment types to experiments
 	for _, e := range Experiments {
 		experimentMap[e.Type()] = e
 	}
 
+	// Parse the experiment configs
 	for _, e := range experimentFiles {
 		experimentConfigs, err := parseExperimentConfigs(e)
 		if err != nil {
@@ -105,6 +107,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		if err != nil {
 			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
+		// if JSON flag is set, append to JSON output
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
@@ -118,6 +121,8 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 			})
 		}
 	}
+
+	// if JSON flag is set, print JSON output
 	if writeJSON {
 		k8sVersion, err := k8s.GetK8sVersion(r.client)
 		if err != nil {
@@ -129,6 +134,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		})
 		return
 	}
+
 	table.Render()
 }
 
