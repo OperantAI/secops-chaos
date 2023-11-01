@@ -6,6 +6,7 @@ package experiments
 import (
 	"context"
 	"fmt"
+
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"k8s.io/client-go/kubernetes"
@@ -61,7 +62,7 @@ type JSONOutput struct {
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experimentFiles []string) *Runner {
+func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	// Create a new Kubernetes client
 	client, err := k8s.NewClient()
 	if err != nil {
@@ -71,10 +72,12 @@ func NewRunner(ctx context.Context, namespace string, allNamespaces bool, experi
 	experimentMap := make(map[string]Experiment)
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
+	// Create a map of experiment types to experiments
 	for _, e := range Experiments {
 		experimentMap[e.Type()] = e
 	}
 
+	// Parse the experiment configs
 	for _, e := range experimentFiles {
 		experimentConfigs, err := parseExperimentConfigs(e)
 		if err != nil {
@@ -119,12 +122,15 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		if err != nil {
 			output.WriteError("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
+		// if JSON flag is set, append to JSON output
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
 			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Framework, outcome.Tactic, outcome.Technique, fmt.Sprintf("%t", outcome.Success)})
 		}
 	}
+
+	// if JSON flag is set, print JSON output
 	if writeJSON {
 		k8sVersion, err := k8s.GetK8sVersion(r.client)
 		if err != nil {
@@ -136,6 +142,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		})
 		return
 	}
+
 	table.Render()
 }
 
