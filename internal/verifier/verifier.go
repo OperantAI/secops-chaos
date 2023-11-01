@@ -7,6 +7,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const (
+	// Success is the string used to represent a successful test
+	Success = "success"
+	// Fail is the string used to represent a failed test
+	Fail = "fail"
+)
+
 // Verifier is used to verify the results of an experiment
 type Verifier struct {
 	outcome *Outcome
@@ -14,12 +21,12 @@ type Verifier struct {
 
 // Outcome is the result of an experiment
 type Outcome struct {
-	Experiment  string          `json:"experiment"`
-	Description string          `json:"description"`
-	Framework   string          `json:"framework"`
-	Tactic      string          `json:"tactic"`
-	Technique   string          `json:"technique"`
-	Result      map[string]bool `json:"result"`
+	Experiment  string            `json:"experiment"`
+	Description string            `json:"description"`
+	Framework   string            `json:"framework"`
+	Tactic      string            `json:"tactic"`
+	Technique   string            `json:"technique"`
+	Result      map[string]string `json:"result"`
 }
 
 // JSONOutput is a pretty-printed JSON output of the verifier
@@ -37,7 +44,7 @@ func New(experiment, description, framework, tactic, technique string) *Verifier
 			Framework:   framework,
 			Tactic:      tactic,
 			Technique:   technique,
-			Result:      make(map[string]bool),
+			Result:      make(map[string]string),
 		},
 	}
 }
@@ -45,18 +52,18 @@ func New(experiment, description, framework, tactic, technique string) *Verifier
 // Success increments the successful and total counters
 func (v *Verifier) Success(test string) {
 	if test == "" {
-		v.outcome.Result[v.outcome.Experiment] = true
+		v.outcome.Result[v.outcome.Experiment] = Success
 	} else {
-		v.outcome.Result[test] = true
+		v.outcome.Result[test] = Success
 	}
 }
 
 // Fail increments the total counter
 func (v *Verifier) Fail(test string) {
 	if test == "" {
-		v.outcome.Result[v.outcome.Experiment] = false
+		v.outcome.Result[v.outcome.Experiment] = Fail
 	} else {
-		v.outcome.Result[test] = false
+		v.outcome.Result[test] = Fail
 	}
 }
 
@@ -75,12 +82,12 @@ func (r *Outcome) GetResultString() string {
 
 	// For each result in the Outcome, add a line to the output
 	for name, result := range r.Result {
-		if result {
-			fmt.Fprintf(b, "%s: %s\n", name, successColour.Render("success"))
+		if result == Success {
+			fmt.Fprintf(b, "%s: %s\n", name, successColour.Render(Success))
 			continue
 		}
 
-		fmt.Fprintf(b, "%s: %s\n", name, failColour.Render("fail"))
+		fmt.Fprintf(b, "%s: %s\n", name, failColour.Render(Fail))
 	}
 	return b.String()
 }

@@ -21,8 +21,8 @@ func TestVerifier_Success(t *testing.T) {
 				Framework:   "experiment_framework",
 				Tactic:      "experiment_tactic",
 				Technique:   "experiment_technique",
-				Result: map[string]bool{
-					"experiment_name": true,
+				Result: map[string]string{
+					"experiment_name": Success,
 				},
 			},
 		},
@@ -35,8 +35,8 @@ func TestVerifier_Success(t *testing.T) {
 				Framework:   "experiment_framework",
 				Tactic:      "experiment_tactic",
 				Technique:   "experiment_technique",
-				Result: map[string]bool{
-					"test_name": true,
+				Result: map[string]string{
+					"test_name": Success,
 				},
 			},
 		},
@@ -66,8 +66,8 @@ func TestVerifier_Fail(t *testing.T) {
 				Framework:   "experiment_framework",
 				Tactic:      "experiment_tactic",
 				Technique:   "experiment_technique",
-				Result: map[string]bool{
-					"experiment_name": false,
+				Result: map[string]string{
+					"experiment_name": Fail,
 				},
 			},
 		},
@@ -80,8 +80,8 @@ func TestVerifier_Fail(t *testing.T) {
 				Framework:   "experiment_framework",
 				Tactic:      "experiment_tactic",
 				Technique:   "experiment_technique",
-				Result: map[string]bool{
-					"test_name": false,
+				Result: map[string]string{
+					"test_name": Fail,
 				},
 			},
 		},
@@ -106,8 +106,8 @@ func TestOutcome_GetResultString(t *testing.T) {
 			testName: "Generate result string for a successful experiment",
 			outcome: &Outcome{
 				Experiment: "experiment_name",
-				Result: map[string]bool{
-					"experiment_name": true,
+				Result: map[string]string{
+					"experiment_name": Success,
 				},
 			},
 			expected: "experiment_name: success\n",
@@ -116,8 +116,8 @@ func TestOutcome_GetResultString(t *testing.T) {
 			testName: "Generate result string for a failed experiment",
 			outcome: &Outcome{
 				Experiment: "experiment_name",
-				Result: map[string]bool{
-					"experiment_name": false,
+				Result: map[string]string{
+					"experiment_name": Fail,
 				},
 			},
 			expected: "experiment_name: fail\n",
@@ -126,9 +126,9 @@ func TestOutcome_GetResultString(t *testing.T) {
 			testName: "Generate result string for multiple experiments",
 			outcome: &Outcome{
 				Experiment: "experiment_name",
-				Result: map[string]bool{
-					"test_name1": true,
-					"test_name2": false,
+				Result: map[string]string{
+					"test_name1": Success,
+					"test_name2": Fail,
 				},
 			},
 			expected: "test_name1: success\ntest_name2: fail\n",
