@@ -42,18 +42,6 @@ func New(experiment, description, framework, tactic, technique string) *Verifier
 	}
 }
 
-// AssertEqual compares the actual and expected values and sets the Result accordingly
-func (v *Verifier) AssertEqual(test string, actual, expected interface{}) bool {
-	// Update the Result based on the assertion
-	if actual == expected {
-		v.Success(test)
-	} else {
-		v.Fail(test)
-	}
-
-	return actual == expected
-}
-
 // Success increments the successful and total counters
 func (v *Verifier) Success(test string) {
 	if test == "" {

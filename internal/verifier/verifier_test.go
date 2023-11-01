@@ -3,68 +3,142 @@ package verifier
 import (
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestVerifier_AssertEqual(t *testing.T) {
+func TestVerifier_Success(t *testing.T) {
 	tests := []struct {
-		name     string
-		actual   interface{}
-		expected interface{}
-		wantPass bool
+		testName string
+		test     string
+		expect   *Outcome
 	}{
 		{
-			"TestEqual",
-			&v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pod-1",
+			testName: "Set outcome to true for experiment when test is empty",
+			test:     "",
+			expect: &Outcome{
+				Experiment:  "experiment_name",
+				Description: "experiment_description",
+				Framework:   "experiment_framework",
+				Tactic:      "experiment_tactic",
+				Technique:   "experiment_technique",
+				Result: map[string]bool{
+					"experiment_name": true,
 				},
 			},
-			&v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pod-1",
-				},
-			},
-			true,
 		},
 		{
-			"TestNotEqual",
-			&v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pod-1",
+			testName: "Set outcome to true for a specific test",
+			test:     "test_name",
+			expect: &Outcome{
+				Experiment:  "experiment_name",
+				Description: "experiment_description",
+				Framework:   "experiment_framework",
+				Tactic:      "experiment_tactic",
+				Technique:   "experiment_technique",
+				Result: map[string]bool{
+					"test_name": true,
 				},
 			},
-			&v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "pod-2",
-				},
-			},
-			false,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			verifier := New(
-				"test_experiment",
-				"test_description",
-				"test_framework",
-				"test_tactic",
-				"test_technique",
-			)
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			verifier := New("experiment_name", "experiment_description", "experiment_framework", "experiment_tactic", "experiment_technique")
+			verifier.Success(test.test)
+			assert.Equal(t, test.expect, verifier.GetOutcome())
+		})
+	}
+}
 
-			result := verifier.AssertEqual(
-				tt.actual.(*v1.Pod).ObjectMeta.Name,
-				tt.expected.(*v1.Pod).ObjectMeta.Name,
-			)
+func TestVerifier_Fail(t *testing.T) {
+	tests := []struct {
+		testName string
+		test     string
+		expect   *Outcome
+	}{
+		{
+			testName: "Set outcome to false for experiment when test is empty",
+			test:     "",
+			expect: &Outcome{
+				Experiment:  "experiment_name",
+				Description: "experiment_description",
+				Framework:   "experiment_framework",
+				Tactic:      "experiment_tactic",
+				Technique:   "experiment_technique",
+				Result: map[string]bool{
+					"experiment_name": false,
+				},
+			},
+		},
+		{
+			testName: "Set outcome to false for a specific test",
+			test:     "test_name",
+			expect: &Outcome{
+				Experiment:  "experiment_name",
+				Description: "experiment_description",
+				Framework:   "experiment_framework",
+				Tactic:      "experiment_tactic",
+				Technique:   "experiment_technique",
+				Result: map[string]bool{
+					"test_name": false,
+				},
+			},
+		},
+	}
 
-			require.Equal(t, tt.wantPass, result)
-			outcome := verifier.GetOutcome()
-			assert.Equal(t, tt.wantPass, outcome.Result.Successful == outcome.Result.Total)
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			verifier := New("experiment_name", "experiment_description", "experiment_framework", "experiment_tactic", "experiment_technique")
+			verifier.Fail(test.test)
+			assert.Equal(t, test.expect, verifier.GetOutcome())
+		})
+	}
+}
+
+func TestOutcome_GetResultString(t *testing.T) {
+	tests := []struct {
+		testName string
+		outcome  *Outcome
+		expected string
+	}{
+		{
+			testName: "Generate result string for a successful experiment",
+			outcome: &Outcome{
+				Experiment: "experiment_name",
+				Result: map[string]bool{
+					"experiment_name": true,
+				},
+			},
+			expected: "experiment_name: success\n",
+		},
+		{
+			testName: "Generate result string for a failed experiment",
+			outcome: &Outcome{
+				Experiment: "experiment_name",
+				Result: map[string]bool{
+					"experiment_name": false,
+				},
+			},
+			expected: "experiment_name: fail\n",
+		},
+		{
+			testName: "Generate result string for multiple experiments",
+			outcome: &Outcome{
+				Experiment: "experiment_name",
+				Result: map[string]bool{
+					"experiment_name": true,
+					"test_name":       false,
+				},
+			},
+			expected: "test_name1: success\ntest_name2: fail\n",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			resultString := test.outcome.GetResultString()
+			assert.Equal(t, test.expected, resultString)
 		})
 	}
 }
