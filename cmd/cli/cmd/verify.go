@@ -15,15 +15,6 @@ var verifyCmd = &cobra.Command{
 	Short: "Verify the outcome of an experiment",
 	Long:  "Verify the outcome of an experiment",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Read the flags
-		namespace, err := cmd.Flags().GetString("namespace")
-		if err != nil {
-			output.WriteError("Error reading namespace flag: %v", err)
-		}
-		allNamespaces, err := cmd.Flags().GetBool("all")
-		if err != nil {
-			output.WriteError("Error reading all flag: %v", err)
-		}
 		files, err := cmd.Flags().GetStringSlice("file")
 		if err != nil {
 			output.WriteError("Error reading file flag: %v", err)
@@ -35,7 +26,7 @@ var verifyCmd = &cobra.Command{
 
 		// Run the verifiers
 		ctx := cmd.Context()
-		er := experiments.NewRunner(ctx, namespace, allNamespaces, files)
+		er := experiments.NewRunner(ctx, files)
 		er.RunVerifiers(outputJSON)
 	},
 }
