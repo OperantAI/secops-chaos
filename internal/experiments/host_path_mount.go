@@ -6,7 +6,9 @@ package experiments
 import (
 	"context"
 	"fmt"
+
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/verifier"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -116,7 +118,7 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kuberne
 	return err
 }
 
-func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error) {
+func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
@@ -124,14 +126,13 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kube
 		return nil, err
 	}
 	params := hostPathMountExperimentConfig.Parameters
-	outcome := &Outcome{
-		Experiment:  hostPathMountExperimentConfig.Metadata.Name,
-		Description: hostPathMountExperimentConfig.Description(),
-		Framework:   hostPathMountExperimentConfig.Framework(),
-		Tactic:      hostPathMountExperimentConfig.Tactic(),
-		Technique:   hostPathMountExperimentConfig.Technique(),
-		Success:     false,
-	}
+	v := verifier.New(
+		hostPathMountExperimentConfig.Metadata.Name,
+		hostPathMountExperimentConfig.Description(),
+		hostPathMountExperimentConfig.Framework(),
+		hostPathMountExperimentConfig.Tactic(),
+		hostPathMountExperimentConfig.Technique(),
+	)
 	listOptions := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app=%s", hostPathMountExperimentConfig.Metadata.Name),
 	}
@@ -140,9 +141,13 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kube
 		return nil, err
 	}
 	if len(pods.Items) == 1 {
-		outcome.Success = checkVolumes(pods.Items[0], params.HostPath.Path)
+		if checkVolumes(pods.Items[0], params.HostPath.Path) {
+			v.Success("")
+		} else {
+			v.Fail("")
+		}
 	}
-	return outcome, nil
+	return v.GetOutcome(), nil
 }
 
 func checkVolumes(pod corev1.Pod, volumePath string) bool {

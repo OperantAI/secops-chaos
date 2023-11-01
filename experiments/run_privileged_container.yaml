@@ -1,17 +1,10 @@
 experiments:
   - metadata:
-      name: run-privileged-container-host-pid
+      name: run-privileged-container
       type: privileged_container
       namespace: default
     parameters:
       privileged: true
       host_pid: true
-      run_as_root: true
-  - metadata:
-      name: run-privileged-container-host-network
-      type: privileged_container
-      namespace: default
-    parameters:
-      privileged: true
       host_network: true
       run_as_root: true

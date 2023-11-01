@@ -5,9 +5,11 @@ package experiments
 
 import (
 	"context"
+
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/verifier"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +24,7 @@ type PrivilegedContainerExperimentConfig struct {
 	Parameters PrivilegedContainer `yaml:"parameters"`
 }
 
+// PrivilegedContainer is an experiment that creates a deployment with a privileged container
 type PrivilegedContainer struct {
 	Privileged  bool `yaml:"privileged"`
 	HostPid     bool `yaml:"host_pid"`
@@ -55,6 +58,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	if err != nil {
 		return err
 	}
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: privilegedContainerExperimentConfig.Metadata.Name,
@@ -74,6 +78,8 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 					},
 				},
 				Spec: corev1.PodSpec{
+					HostNetwork: privilegedContainerExperimentConfig.Parameters.HostNetwork,
+					HostPID:     privilegedContainerExperimentConfig.Parameters.HostPid,
 					Containers: []corev1.Container{
 						{
 							Name:            privilegedContainerExperimentConfig.Metadata.Name,
@@ -96,12 +102,6 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 	params := privilegedContainerExperimentConfig.Parameters
-	if params.HostPid {
-		deployment.Spec.Template.Spec.HostPID = true
-	}
-	if params.HostNetwork {
-		deployment.Spec.Template.Spec.HostNetwork = true
-	}
 	if params.RunAsRoot {
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
 			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
@@ -126,7 +126,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error) {
+func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var privilegedContainerExperimentConfig PrivilegedContainerExperimentConfig
 	err := mapstructure.Decode(experimentConfig, &privilegedContainerExperimentConfig)
 	if err != nil {
@@ -137,41 +137,52 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 		return nil, err
 	}
 	params := privilegedContainerExperimentConfig.Parameters
-	outcome := &Outcome{
-		Experiment:  privilegedContainerExperimentConfig.Metadata.Name,
-		Description: privilegedContainerExperimentConfig.Description(),
-		Framework:   privilegedContainerExperimentConfig.Framework(),
-		Tactic:      privilegedContainerExperimentConfig.Tactic(),
-		Technique:   privilegedContainerExperimentConfig.Technique(),
-		Success:     false,
-	}
+
+	verifier := verifier.New(
+		privilegedContainerExperimentConfig.Metadata.Name,
+		privilegedContainerExperimentConfig.Description(),
+		privilegedContainerExperimentConfig.Framework(),
+		privilegedContainerExperimentConfig.Tactic(),
+		privilegedContainerExperimentConfig.Technique(),
+	)
 
 	if params.HostPid {
+		verifier.Fail("RunAsRoot")
 		if deployment.Spec.Template.Spec.HostPID {
-			outcome.Success = true
-			return outcome, nil
+			verifier.Success("HostPID")
 		}
 	}
 
 	if params.HostNetwork {
+		verifier.Fail("RunAsRoot")
 		if deployment.Spec.Template.Spec.HostNetwork {
-			outcome.Success = true
-			return outcome, nil
+			verifier.Success("HostNetwork")
 		}
 	}
 
-	if params.Privileged {
+	if params.RunAsRoot {
+		verifier.Fail("RunAsRoot")
 		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
-			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
-				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
-					outcome.Success = true
-					return outcome, nil
+			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser != nil {
+				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser == 0 {
+					verifier.Success("RunAsRoot")
 				}
 			}
 		}
 	}
 
-	return outcome, nil
+	if params.Privileged {
+		verifier.Fail("Privileged")
+		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
+			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
+				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
+					verifier.Success("Privileged")
+				}
+			}
+		}
+	}
+
+	return verifier.GetOutcome(), nil
 }
 
 func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
