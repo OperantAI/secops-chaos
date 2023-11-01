@@ -127,8 +127,8 @@ func TestOutcome_GetResultString(t *testing.T) {
 			outcome: &Outcome{
 				Experiment: "experiment_name",
 				Result: map[string]bool{
-					"experiment_name": true,
-					"test_name":       false,
+					"test_name1": true,
+					"test_name2": false,
 				},
 			},
 			expected: "test_name1: success\ntest_name2: fail\n",
