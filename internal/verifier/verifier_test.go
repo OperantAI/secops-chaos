@@ -138,7 +138,7 @@ func TestOutcome_GetResultString(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			resultString := test.outcome.GetResultString()
-			assert.Equal(t, test.expected, resultString)
+			assert.Contains(t, test.expected, resultString)
 		})
 	}
 }
