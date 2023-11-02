@@ -15,11 +15,11 @@ experiments:
 
 ## Available Experiments
 
-| Type                                                  | Description                                                                         | Framework |
-|-------------------------------------------------------|-------------------------------------------------------------------------------------|-----------|
-| [privileged_container](run_privileged_container.yaml) | This experiment attempts to run a privileged container in a namespace               | MITRE     |
-| [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container | MITRE     |
-
+| Type                                                  | Description                                                                                 | Framework |
+|-------------------------------------------------------|---------------------------------------------------------------------------------------------|-----------|
+| [privileged_container](run_privileged_container.yaml) | This experiment attempts to run a privileged container in a namespace                       | MITRE     |
+| [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container         | MITRE     |
+| [cluster_admin_binding](cluster_admin_binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached | MITRE     |
 
 ## Implementing a new Experiment
 
