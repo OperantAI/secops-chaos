@@ -151,9 +151,9 @@ func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client
 	v := verifier.New(
 		config.Metadata.Name,
 		config.Description(),
-		config.Technique(),
-		config.Tactic(),
 		config.Framework(),
+		config.Tactic(),
+		config.Technique(),
 	)
 
 	listOptions := metav1.ListOptions{
