@@ -32,5 +32,5 @@ func init() {
 
 	// Define the path of the experiment file to run
 	runCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
-	runCmd.MarkFlagRequired("file")
+	_ = runCmd.MarkFlagRequired("file")
 }
