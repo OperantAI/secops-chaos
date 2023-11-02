@@ -32,5 +32,5 @@ func init() {
 
 	// Define the path of the experiment file to run
 	cleanCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
-	cleanCmd.MarkFlagRequired("file")
+	_ = cleanCmd.MarkFlagRequired("file")
 }

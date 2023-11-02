@@ -135,12 +135,12 @@ func init() {
 			ConnectFromProxyServer:     mitreEntry{"TA0005", "Defense Evasion", "Connect From Proxy Server"},
 		},
 		Credentials{
-			ListK8sSecrets:                             mitreEntry{"TA0006", "Credentials", "List K8s Secrets"},
-			MountServicePrincipal:                      mitreEntry{"TA0006", "Credentials", "Mount Service Principal"},
-			AccessContainerServiceAccount:              mitreEntry{"TA0006", "Credentials", "Access Container Service Account"},
-			ApplicationCredentialsInConfigurationFiles: mitreEntry{"TA0006", "Credentials", "Application Credentials In Configuration Files"},
-			AccessManagedIdentityCredentials:           mitreEntry{"TA0006", "Credentials", "Access Managed Identity Credentials"},
-			MaliciousAdmissionController:               mitreEntry{"TA0006", "Credentials", "Malicious Admission Controller"},
+			ListK8sSecrets:                             mitreEntry{"TA0006", "Credential Access", "List K8s Secrets"},
+			MountServicePrincipal:                      mitreEntry{"TA0006", "Credential Access", "Mount Service Principal"},
+			AccessContainerServiceAccount:              mitreEntry{"TA0006", "Credential Access", "Access Container Service Account"},
+			ApplicationCredentialsInConfigurationFiles: mitreEntry{"TA0006", "Credential Access", "Application Credentials In Configuration Files"},
+			AccessManagedIdentityCredentials:           mitreEntry{"TA0006", "Credential Access", "Access Managed Identity Credentials"},
+			MaliciousAdmissionController:               mitreEntry{"TA0006", "Credential Access", "Malicious Admission Controller"},
 		},
 		Discovery{
 			AccessTheK8sApiServer:     mitreEntry{"TA0007", "Discovery", "Access The K8s API Server"},

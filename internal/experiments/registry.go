@@ -5,4 +5,5 @@ var ExperimentsRegistry = []Experiment{
 	&PrivilegedContainerExperimentConfig{},
 	&HostPathMountExperimentConfig{},
 	&ClusterAdminBindingExperimentConfig{},
+	&ContainerSecretsExperimentConfig{},
 }

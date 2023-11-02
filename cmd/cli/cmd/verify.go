@@ -36,7 +36,7 @@ func init() {
 
 	// Define the path of the experiment file to run
 	verifyCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
-	verifyCmd.MarkFlagRequired("file")
+	_ = verifyCmd.MarkFlagRequired("file")
 
 	// Output the results in JSON format
 	verifyCmd.Flags().BoolP("json", "j", false, "Output results in JSON format")
