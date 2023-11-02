@@ -179,7 +179,7 @@ func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k
 }
 
 func checkPodForSecrets(pod corev1.Pod, envTest []ContainerSecretsEnv) bool {
-	if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
+	if pod.Status.Phase == "Running" && pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
 		podEnv := pod.Spec.Containers[0].Env
 		for _, item := range podEnv {
 			for _, envItem := range envTest {
