@@ -31,7 +31,7 @@
 ### Installation
 
 ``` sh
-go install github.com/operantai/secops-chaos@latest
+go install github.com/operantai/secops-chaos/cmd/secops-chaos@latest
 ```
 
 Go will automatically install it in your `$GOPATH/bin` directory, which should be in your `$PATH`.
