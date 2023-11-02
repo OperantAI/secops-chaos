@@ -16,6 +16,7 @@ import (
 var Experiments = []Experiment{
 	&PrivilegedContainerExperimentConfig{},
 	&HostPathMountExperimentConfig{},
+	&ContainerSecretsExperimentConfig{},
 }
 
 // Experiment is the interface for an experiment
