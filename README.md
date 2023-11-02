@@ -43,7 +43,11 @@ The design of **secops-chaos** can be broken down into two components:
 - **Experiments** - Experiments actively try to run something to discover if a security weakness is present.
 - **Verifiers** - Verifiers look at the results of an Experiment and reports their outcome.
 
-The secops-chaos CLI mirrors this, and exposes `run` & `verify` commands. To start, you need to run an experiment:
+The secops-chaos CLI mirrors this, and exposes `run` & `verify` commands. To start, you need to run an experiment.
+
+Each experiment is defined by a `experiment` file which allows you to tweak your experiment parameters to suit your scenarios.
+
+For a full list of experiments you can run, see the [experiments][experiments-dir-url] directory.
 
 ``` sh
 secops-chaos run -f experiments/host_path_volume.yaml
@@ -56,8 +60,6 @@ secops-chaos verify -f experiments/host_path_volume.yaml
 ```
 
 You can also output a JSON with the verifier results by using the `-j` flag.
-
-For a full list of experiments you can run, see the [experiments][experiments-dir-url] directory.
 
 ## Contributing
 
