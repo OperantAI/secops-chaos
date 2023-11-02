@@ -6,9 +6,10 @@ package experiments
 import (
 	"context"
 
-	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v3"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -53,36 +54,41 @@ func (p *PrivilegedContainerExperimentConfig) Framework() string {
 }
 
 func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
-	var privilegedContainerExperimentConfig PrivilegedContainerExperimentConfig
-	err := mapstructure.Decode(experimentConfig, &privilegedContainerExperimentConfig)
+	var config PrivilegedContainerExperimentConfig
+	yamlObj, _ := yaml.Marshal(experimentConfig)
+	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: privilegedContainerExperimentConfig.Metadata.Name,
+			Name: config.Metadata.Name,
+			Labels: map[string]string{
+				"experiment": config.Metadata.Name,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: pointer.Int32(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": privilegedContainerExperimentConfig.Metadata.Name,
+					"app":        config.Metadata.Name,
+					"experiment": config.Metadata.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"experiment": privilegedContainerExperimentConfig.Metadata.Name,
-						"app":        privilegedContainerExperimentConfig.Metadata.Name,
+						"experiment": config.Metadata.Name,
+						"app":        config.Metadata.Name,
 					},
 				},
 				Spec: corev1.PodSpec{
-					HostNetwork: privilegedContainerExperimentConfig.Parameters.HostNetwork,
-					HostPID:     privilegedContainerExperimentConfig.Parameters.HostPid,
+					HostNetwork: config.Parameters.HostNetwork,
+					HostPID:     config.Parameters.HostPid,
 					Containers: []corev1.Container{
 						{
-							Name:            privilegedContainerExperimentConfig.Metadata.Name,
+							Name:            config.Metadata.Name,
 							Image:           "alpine:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
@@ -90,81 +96,78 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 								"-c",
 								"while true; do :; done",
 							},
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: 4000,
-								},
-							},
 						},
 					},
 				},
 			},
 		},
 	}
-	params := privilegedContainerExperimentConfig.Parameters
+
+	params := config.Parameters
+	container := deployment.Spec.Template.Spec.Containers[0]
+	securityContext := &corev1.SecurityContext{}
 	if params.RunAsRoot {
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
-				RunAsUser: pointer.Int64(0),
-			}
-		} else {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = pointer.Int64(0)
-		}
+		securityContext.RunAsUser = pointer.Int64(0)
 	}
 
 	if params.Privileged {
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
-				Privileged: pointer.Bool(true),
-			}
-		} else {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged = pointer.Bool(true)
-		}
+		securityContext.Privileged = pointer.Bool(true)
 	}
 
-	_, err = client.AppsV1().Deployments(privilegedContainerExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	container.SecurityContext = securityContext
+	deployment.Spec.Template.Spec.Containers[0] = container
+
+	_, err = client.AppsV1().Deployments(config.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
 func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var privilegedContainerExperimentConfig PrivilegedContainerExperimentConfig
-	err := mapstructure.Decode(experimentConfig, &privilegedContainerExperimentConfig)
+	var config PrivilegedContainerExperimentConfig
+	yamlObj, _ := yaml.Marshal(experimentConfig)
+	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return nil, err
 	}
-	deployment, err := client.AppsV1().Deployments(privilegedContainerExperimentConfig.Metadata.Namespace).Get(ctx, privilegedContainerExperimentConfig.Metadata.Name, metav1.GetOptions{})
+
+	deployment, err := client.AppsV1().Deployments(config.Metadata.Namespace).Get(ctx, config.Metadata.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	params := privilegedContainerExperimentConfig.Parameters
+	params := config.Parameters
 
 	verifier := verifier.New(
-		privilegedContainerExperimentConfig.Metadata.Name,
-		privilegedContainerExperimentConfig.Description(),
-		privilegedContainerExperimentConfig.Framework(),
-		privilegedContainerExperimentConfig.Tactic(),
-		privilegedContainerExperimentConfig.Technique(),
+		config.Metadata.Name,
+		config.Description(),
+		config.Framework(),
+		config.Tactic(),
+		config.Technique(),
 	)
 
 	if params.HostPid {
-		verifier.Fail("RunAsRoot")
+		verifier.Fail("HostPID")
 		if deployment.Spec.Template.Spec.HostPID {
 			verifier.Success("HostPID")
 		}
 	}
 
 	if params.HostNetwork {
-		verifier.Fail("RunAsRoot")
+		verifier.Fail("HostNetwork")
 		if deployment.Spec.Template.Spec.HostNetwork {
 			verifier.Success("HostNetwork")
 		}
 	}
 
+	// Find the container by name, as it may not be the first container in the list due to sidecar injection
+	container, err := k8s.FindContainerByName(deployment.Spec.Template.Spec.Containers, config.Metadata.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	if params.RunAsRoot {
 		verifier.Fail("RunAsRoot")
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
-			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser != nil {
-				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser == 0 {
+		if container.SecurityContext != nil {
+			if container.SecurityContext.RunAsUser != nil {
+				if *container.SecurityContext.RunAsUser == 0 {
 					verifier.Success("RunAsRoot")
 				}
 			}
@@ -173,9 +176,9 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 
 	if params.Privileged {
 		verifier.Fail("Privileged")
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
-			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
-				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
+		if container.SecurityContext != nil {
+			if container.SecurityContext.Privileged != nil {
+				if *container.SecurityContext.Privileged {
 					verifier.Success("Privileged")
 				}
 			}
@@ -186,10 +189,11 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 }
 
 func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
-	var privilegedContainerExperimentConfig PrivilegedContainerExperimentConfig
-	err := mapstructure.Decode(experimentConfig, &privilegedContainerExperimentConfig)
+	var config PrivilegedContainerExperimentConfig
+	yamlObj, _ := yaml.Marshal(experimentConfig)
+	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
-	return client.AppsV1().Deployments(privilegedContainerExperimentConfig.Metadata.Namespace).Delete(ctx, privilegedContainerExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+	return client.AppsV1().Deployments(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
 }
