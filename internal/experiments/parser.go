@@ -10,10 +10,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ExperimentsConfig is a structure which represents the configuration for a set of experiments
 type ExperimentsConfig struct {
 	ExperimentConfigs []ExperimentConfig `yaml:"experiments"`
 }
 
+// ExperimentConfig is a structure which represents the configuration for an experiment
+type ExperimentConfig struct {
+	// Metadata for the experiment
+	Metadata ExperimentMetadata `yaml:"metadata"`
+	// Parameters for the experiment
+	Parameters interface{} `yaml:"parameters"`
+}
+
+// ExperimentMetadata is a structure which represents the metadata required for an experiment
 type ExperimentMetadata struct {
 	// Name of the experiment
 	Name string `yaml:"name"`
@@ -21,12 +31,6 @@ type ExperimentMetadata struct {
 	Namespace string `yaml:"namespace"`
 	// Type of the experiment
 	Type string `yaml:"type"`
-}
-
-type ExperimentConfig struct {
-	Metadata ExperimentMetadata `yaml:"metadata"`
-	// Parameters for the experiment
-	Parameters interface{} `yaml:"parameters"`
 }
 
 // parseExperimentConfig parses a YAML file and returns a slice of ExperimentConfig

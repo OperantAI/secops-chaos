@@ -12,13 +12,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// Experiments is a list of all experiments
-var Experiments = []Experiment{
-	&PrivilegedContainerExperimentConfig{},
-	&HostPathMountExperimentConfig{},
-	&ContainerSecretsExperimentConfig{},
-}
-
 // Experiment is the interface for an experiment
 type Experiment interface {
 	// Type returns the type of the experiment
@@ -59,7 +52,7 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
 	// Create a map of experiment types to experiments
-	for _, e := range Experiments {
+	for _, e := range ExperimentsRegistry {
 		experimentMap[e.Type()] = e
 	}
 

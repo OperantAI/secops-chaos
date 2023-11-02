@@ -3,8 +3,6 @@ package verifier
 import (
 	"bytes"
 	"fmt"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 const (
@@ -76,18 +74,14 @@ func (v *Verifier) GetOutcome() *Outcome {
 func (r *Outcome) GetResultString() string {
 	b := new(bytes.Buffer)
 
-	// Define output styles
-	successColour := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-	failColour := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
-
 	// For each result in the Outcome, add a line to the output
 	for name, result := range r.Result {
 		if result == Success {
-			fmt.Fprintf(b, "%s: %s\n", name, successColour.Render(Success))
+			fmt.Fprintf(b, "%s: %s\n", name, Success)
 			continue
 		}
 
-		fmt.Fprintf(b, "%s: %s\n", name, failColour.Render(Fail))
+		fmt.Fprintf(b, "%s: %s\n", name, Fail)
 	}
 	return b.String()
 }
