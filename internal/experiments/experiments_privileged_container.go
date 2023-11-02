@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -102,23 +103,24 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 	params := privilegedContainerExperimentConfig.Parameters
+	container := deployment.Spec.Template.Spec.Containers[0]
 	if params.RunAsRoot {
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
+		if container.SecurityContext == nil {
+			container.SecurityContext = &corev1.SecurityContext{
 				RunAsUser: pointer.Int64(0),
 			}
 		} else {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = pointer.Int64(0)
+			container.SecurityContext.RunAsUser = pointer.Int64(0)
 		}
 	}
 
 	if params.Privileged {
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext == nil {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext = &corev1.SecurityContext{
+		if container.SecurityContext == nil {
+			container.SecurityContext = &corev1.SecurityContext{
 				Privileged: pointer.Bool(true),
 			}
 		} else {
-			deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged = pointer.Bool(true)
+			container.SecurityContext.Privileged = pointer.Bool(true)
 		}
 	}
 
@@ -160,11 +162,17 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 		}
 	}
 
+	// Find the container by name, as it may not be the first container in the list due to sidecar injection
+	container, err := k8s.FindContainerByName(deployment.Spec.Template.Spec.Containers, privilegedContainerExperimentConfig.Metadata.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	if params.RunAsRoot {
 		verifier.Fail("RunAsRoot")
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
-			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser != nil {
-				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser == 0 {
+		if container.SecurityContext != nil {
+			if container.SecurityContext.RunAsUser != nil {
+				if *container.SecurityContext.RunAsUser == 0 {
 					verifier.Success("RunAsRoot")
 				}
 			}
@@ -173,9 +181,9 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 
 	if params.Privileged {
 		verifier.Fail("Privileged")
-		if deployment.Spec.Template.Spec.Containers[0].SecurityContext != nil {
-			if deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged != nil {
-				if *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged {
+		if container.SecurityContext != nil {
+			if container.SecurityContext.Privileged != nil {
+				if *container.SecurityContext.Privileged {
 					verifier.Success("Privileged")
 				}
 			}
