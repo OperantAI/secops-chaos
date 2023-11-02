@@ -93,6 +93,8 @@ Enhancement suggestions are tracked as [GitHub issues][issues-url].
 
 ### Your First Code Contribution
 
+To implement a new experiment have a read through our [Implementing a new Experiment][implementing-a-new-experiment-docs] documentation.
+
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
@@ -103,5 +105,6 @@ Enhancement suggestions are tracked as [GitHub issues][issues-url].
 
 Please ensure you have unit tests for key pieces of code.
 
+[implementing-a-new-experiment-docs]: https://github.com/operantai/secops-chaos/blob/main/experiments/README.md#implementing-a-new-experiment
 [issues-url]: https://github.com/operantai/secops-chaos/issues
 [documentation-url]: https://github.com/operantai/secops-chaos/blob/main/README.md

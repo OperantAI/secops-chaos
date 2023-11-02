@@ -5,18 +5,12 @@ package experiments
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
+	"github.com/operantai/secops-chaos/internal/verifier"
 	"k8s.io/client-go/kubernetes"
 )
-
-// Experiments is a list of all experiments
-var Experiments = []Experiment{
-	&PrivilegedContainerExperimentConfig{},
-	&HostPathMountExperimentConfig{},
-}
 
 // Experiment is the interface for an experiment
 type Experiment interface {
@@ -33,7 +27,7 @@ type Experiment interface {
 	// Run runs the experiment, returning an error if it fails
 	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error)
+	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
 	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
 }
@@ -44,21 +38,6 @@ type Runner struct {
 	client            *kubernetes.Clientset
 	experiments       map[string]Experiment
 	experimentsConfig map[string]*ExperimentConfig
-}
-
-// Outcome is the result of an experiment
-type Outcome struct {
-	Experiment  string `json:"experiment"`
-	Description string `json:"description"`
-	Framework   string `json:"framework"`
-	Tactic      string `json:"tactic"`
-	Technique   string `json:"technique"`
-	Success     bool   `json:"success"`
-}
-
-type JSONOutput struct {
-	K8sVersion string     `json:"k8s_version"`
-	Results    []*Outcome `json:"results"`
 }
 
 // NewRunner returns a new Runner
@@ -73,7 +52,7 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
 	// Create a map of experiment types to experiments
-	for _, e := range Experiments {
+	for _, e := range ExperimentsRegistry {
 		experimentMap[e.Type()] = e
 	}
 
@@ -115,18 +94,25 @@ func (r *Runner) Run() {
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(writeJSON bool) {
 	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
-	outcomes := []*Outcome{}
+	outcomes := []*verifier.Outcome{}
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
 		outcome, err := experiment.Verify(r.ctx, r.client, e)
 		if err != nil {
-			output.WriteError("Verifier %s failed: %s", e.Metadata.Name, err)
+			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
 		// if JSON flag is set, append to JSON output
 		if writeJSON {
 			outcomes = append(outcomes, outcome)
 		} else {
-			table.AddRow([]string{outcome.Experiment, outcome.Description, outcome.Framework, outcome.Tactic, outcome.Technique, fmt.Sprintf("%t", outcome.Success)})
+			table.AddRow([]string{
+				outcome.Experiment,
+				outcome.Description,
+				outcome.Framework,
+				outcome.Tactic,
+				outcome.Technique,
+				outcome.GetResultString(),
+			})
 		}
 	}
 
@@ -136,7 +122,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
-		output.WriteJSON(JSONOutput{
+		output.WriteJSON(verifier.JSONOutput{
 			K8sVersion: k8sVersion.String(),
 			Results:    outcomes,
 		})

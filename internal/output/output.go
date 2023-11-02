@@ -10,12 +10,11 @@ import (
 )
 
 const (
-	InfoColor        = lipgloss.Color("86")
-	SuccessColor     = lipgloss.Color("78")
-	WarningColor     = lipgloss.Color("208")
-	ErrorColor       = lipgloss.Color("196")
-	FatalColor       = lipgloss.Color("196")
-	TableBorderColor = lipgloss.Color("205")
+	InfoColor    = lipgloss.Color("86")
+	SuccessColor = lipgloss.Color("78")
+	WarningColor = lipgloss.Color("208")
+	ErrorColor   = lipgloss.Color("196")
+	FatalColor   = lipgloss.Color("196")
 )
 
 func WriteInfo(msg string, args ...interface{}) {
@@ -63,7 +62,6 @@ func (t *table) AddRow(row []string) {
 func (t *table) Render() {
 	tbl := ltable.New().
 		Border(lipgloss.NormalBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(TableBorderColor)).
 		Headers(t.headers...).
 		Rows(t.rows...)
 
