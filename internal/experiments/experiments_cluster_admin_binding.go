@@ -30,7 +30,7 @@ func (p *ClusterAdminBindingExperimentConfig) Type() string {
 }
 
 func (p *ClusterAdminBindingExperimentConfig) Description() string {
-	return "This experiment attempts to create a container with the cluster-admin role binding attached."
+	return "This experiment attempts to create a container with the cluster-admin role binding attached"
 }
 
 func (p *ClusterAdminBindingExperimentConfig) Technique() string {

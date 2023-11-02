@@ -4,4 +4,5 @@ package experiments
 var ExperimentsRegistry = []Experiment{
 	&PrivilegedContainerExperimentConfig{},
 	&HostPathMountExperimentConfig{},
+	&ClusterAdminBindingExperimentConfig{},
 }

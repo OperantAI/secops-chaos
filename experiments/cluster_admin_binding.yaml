@@ -3,3 +3,4 @@ experiments:
       name: cluster-admin-binding
       type: cluster_admin_binding
       namespace: default
+    parameters: {}
