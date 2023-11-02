@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
 
 	"gopkg.in/yaml.v3"
@@ -14,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 )
 
@@ -45,7 +45,7 @@ func (p *ClusterAdminBindingExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, err := yaml.Marshal(experimentConfig)
 	if err != nil {
@@ -66,7 +66,8 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 
-	_, err = client.CoreV1().ServiceAccounts(config.Metadata.Namespace).Create(ctx, sa, metav1.CreateOptions{})
+	clientset := client.Clientset
+	_, err = clientset.CoreV1().ServiceAccounts(config.Metadata.Namespace).Create(ctx, sa, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 
-	_, err = client.RbacV1().ClusterRoleBindings().Create(ctx, clusterRoleBinding, metav1.CreateOptions{})
+	_, err = clientset.RbacV1().ClusterRoleBindings().Create(ctx, clusterRoleBinding, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -136,11 +137,11 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k
 			},
 		},
 	}
-	_, err = client.AppsV1().Deployments(config.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	_, err = clientset.AppsV1().Deployments(config.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -160,7 +161,8 @@ func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client
 		LabelSelector: "experiment=" + config.Metadata.Name,
 	}
 
-	pods, err := client.CoreV1().Pods(config.Metadata.Namespace).List(ctx, listOptions)
+	clientset := client.Clientset
+	pods, err := clientset.CoreV1().Pods(config.Metadata.Namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +183,7 @@ func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client
 	return v.GetOutcome(), nil
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *ClusterAdminBindingExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -189,16 +191,17 @@ func (p *ClusterAdminBindingExperimentConfig) Cleanup(ctx context.Context, clien
 		return err
 	}
 
-	err = client.AppsV1().Deployments(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	clientset := client.Clientset
+	err = clientset.AppsV1().Deployments(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	err = client.RbacV1().ClusterRoleBindings().Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	err = clientset.RbacV1().ClusterRoleBindings().Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 
-	err = client.CoreV1().ServiceAccounts(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	err = clientset.CoreV1().ServiceAccounts(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}

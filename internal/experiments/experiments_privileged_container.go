@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 )
 
@@ -53,7 +52,7 @@ func (p *PrivilegedContainerExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var config PrivilegedContainerExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -61,6 +60,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 		return err
 	}
 
+	clientset := client.Clientset
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: config.Metadata.Name,
@@ -117,11 +117,11 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	container.SecurityContext = securityContext
 	deployment.Spec.Template.Spec.Containers[0] = container
 
-	_, err = client.AppsV1().Deployments(config.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	_, err = clientset.AppsV1().Deployments(config.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config PrivilegedContainerExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -129,7 +129,8 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 		return nil, err
 	}
 
-	deployment, err := client.AppsV1().Deployments(config.Metadata.Namespace).Get(ctx, config.Metadata.Name, metav1.GetOptions{})
+	clientset := client.Clientset
+	deployment, err := clientset.AppsV1().Deployments(config.Metadata.Namespace).Get(ctx, config.Metadata.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -188,12 +189,13 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	return verifier.GetOutcome(), nil
 }
 
-func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var config PrivilegedContainerExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
-	return client.AppsV1().Deployments(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	clientset := client.Clientset
+	return clientset.AppsV1().Deployments(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
 }

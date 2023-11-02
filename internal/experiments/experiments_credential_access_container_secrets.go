@@ -6,13 +6,14 @@ package experiments
 import (
 	"context"
 	"fmt"
+
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 )
 
@@ -52,7 +53,7 @@ func (p *ContainerSecretsExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
@@ -60,6 +61,7 @@ func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *kube
 		return err
 	}
 	params := containerSecretsExperimentConfig.Parameters
+	clientset := client.Clientset
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: containerSecretsExperimentConfig.Metadata.Name,
@@ -118,19 +120,19 @@ func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *kube
 		configMap.Data[item.EnvKey] = item.EnvValue
 	}
 	if params.PodEnvCheck {
-		_, err = client.AppsV1().Deployments(containerSecretsExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+		_, err = clientset.AppsV1().Deployments(containerSecretsExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
 	}
 	if params.ConfigMapCheck {
-		_, err = client.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).Create(ctx, configMap, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).Create(ctx, configMap, metav1.CreateOptions{})
 		return err
 	}
 	return nil
 }
 
-func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
@@ -138,6 +140,7 @@ func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k
 		return nil, err
 	}
 	params := containerSecretsExperimentConfig.Parameters
+	clientset := client.Clientset
 	v := verifier.New(
 		containerSecretsExperimentConfig.Metadata.Name,
 		containerSecretsExperimentConfig.Description(),
@@ -149,7 +152,7 @@ func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k
 		LabelSelector: fmt.Sprintf("app=%s", containerSecretsExperimentConfig.Metadata.Name),
 	}
 	if params.PodEnvCheck {
-		pods, err := client.CoreV1().Pods(containerSecretsExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
+		pods, err := clientset.CoreV1().Pods(containerSecretsExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +166,7 @@ func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k
 		}
 	}
 	if params.ConfigMapCheck {
-		configMaps, err := client.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
+		configMaps, err := clientset.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +215,7 @@ func checkConfigMapForSecrets(configMap corev1.ConfigMap, envTest []ContainerSec
 	return false
 }
 
-func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
@@ -220,15 +223,16 @@ func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, client *
 		return err
 	}
 	params := containerSecretsExperimentConfig.Parameters
+	clientset := client.Clientset
 	if params.PodEnvCheck {
-		err = client.AppsV1().Deployments(containerSecretsExperimentConfig.Metadata.Namespace).Delete(ctx, containerSecretsExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+		err = clientset.AppsV1().Deployments(containerSecretsExperimentConfig.Metadata.Namespace).Delete(ctx, containerSecretsExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
 
 		if err != nil {
 			return err
 		}
 	}
 	if params.ConfigMapCheck {
-		return client.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).Delete(ctx, containerSecretsExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+		return clientset.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).Delete(ctx, containerSecretsExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
 	}
 	return nil
 }
