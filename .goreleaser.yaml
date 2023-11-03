@@ -1,0 +1,39 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    main: ./cmd/secops-chaos
+    goos:
+      - linux
+      - windows
+      - darwin
+    ldflags:
+      - "-X github.com/operantai/secops-chaos/cmd/secops-chaos/cmd.GitCommit={{.Commit}}"
+      - "-X github.com/operantai/secops-chaos/cmd/secops-chaos/cmd.Version={{.Version}}"
+      - "-X github.com/operantai/secops-chaos/cmd/secops-chaos/cmd.BuildDate={{ .Date }}"
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+    - goos: windows
+      format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

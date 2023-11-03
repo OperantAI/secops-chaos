@@ -3,3 +3,5 @@ bin/
 .idea
 *.log
 tmp/
+
+dist/
