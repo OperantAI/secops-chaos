@@ -88,7 +88,7 @@ type HostPath struct {
 	Path string `yaml:"path"`
 }
 
-func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
