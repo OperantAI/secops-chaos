@@ -36,7 +36,7 @@ type RemoteExecuteAPI struct {
 }
 
 func (p *RemoteExecuteAPIExperimentConfig) Type() string {
-	return "remote_execute"
+	return "remote_execute_api"
 }
 
 func (p *RemoteExecuteAPIExperimentConfig) Description() string {
