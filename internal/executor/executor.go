@@ -29,6 +29,7 @@ type RemoteExecutor struct {
 	ServiceAccountName string
 	TargetPort         int32
 	LocalPort          int32
+	ImageParameters    string
 }
 
 type PortForwardConfig struct {
@@ -39,20 +40,22 @@ type PortForwardConfig struct {
 }
 
 // Executor configurations are meant to be used to execute remote commands on a pod in a cluster.
-func NewExecutorConfig(name, namespace, image, serviceAccountName string, TargetPort, LocalPort int32) *RemoteExecutorConfig {
+func NewExecutorConfig(name, namespace, image, imageParameters, serviceAccountName string, targetPort, localPort int32) *RemoteExecutorConfig {
 	return &RemoteExecutorConfig{
 		Name:      name,
 		Namespace: namespace,
 		Image:     image,
 		Parameters: RemoteExecutor{
 			ServiceAccountName: serviceAccountName,
-			TargetPort:         TargetPort,
-			LocalPort:          LocalPort,
+			TargetPort:         targetPort,
+			LocalPort:          localPort,
+			ImageParameters:    imageParameters,
 		},
 	}
 }
 
 func (r *RemoteExecutorConfig) Deploy(ctx context.Context, client *kubernetes.Clientset) error {
+	envVar := prepareImageParameters(r.Parameters.ImageParameters)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Name,
@@ -82,6 +85,7 @@ func (r *RemoteExecutorConfig) Deploy(ctx context.Context, client *kubernetes.Cl
 									ContainerPort: r.Parameters.TargetPort,
 								},
 							},
+							Env: envVar,
 						},
 					},
 				},
@@ -155,4 +159,19 @@ func (r *RemoteExecutorConfig) Cleanup(ctx context.Context, client *kubernetes.C
 	}
 
 	return client.CoreV1().Services(r.Namespace).Delete(ctx, r.Name, metav1.DeleteOptions{})
+}
+
+func prepareImageParameters(imageParameters string) []corev1.EnvVar {
+	var envVar []corev1.EnvVar
+	params := strings.Split(imageParameters, ";")
+
+	for _, param := range params {
+		parts := strings.Split(param, "=")
+		envVar = append(envVar, corev1.EnvVar{
+			Name:  parts[0],
+			Value: parts[1],
+		})
+	}
+
+	return envVar
 }

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -27,11 +29,13 @@ func main() {
 }
 
 func CheckEgress(w http.ResponseWriter, r *http.Request) {
-	endpoints := []string{
-		"https://google.com",
-		"https://linkedin.com",
-		"https://openai.com",
+	urls, exists := os.LookupEnv("URLS")
+	if !exists {
+		http.Error(w, "No URLS found in environment", http.StatusInternalServerError)
 	}
+
+	endpoints := strings.Split(urls, ",")
+
 	for _, e := range endpoints {
 		resp, err := http.Get(e)
 		if err != nil {

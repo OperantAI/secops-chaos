@@ -27,6 +27,7 @@ type RemoteExecuteAPIExperimentConfig struct {
 // The source can be found at internal/executor/container_examples/egress_server
 type RemoteExecuteAPI struct {
 	Image                string `yaml:"image"`
+	ImageParameters      string `yaml:"image_parameters"`
 	TargetPort           int32  `yaml:"target_port"`
 	Path                 string `yaml:"path"`
 	ServiceAccountName   string `yaml:"service_account_name"`
@@ -64,6 +65,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.
 		config.Metadata.Name,
 		config.Metadata.Namespace,
 		config.Parameters.Image,
+		config.Parameters.ImageParameters,
 		config.Parameters.ServiceAccountName,
 		config.Parameters.TargetPort,
 		config.Parameters.LocalPort,
@@ -89,6 +91,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k
 		config.Metadata.Name,
 		config.Metadata.Namespace,
 		config.Parameters.Image,
+		config.Parameters.ImageParameters,
 		config.Parameters.ServiceAccountName,
 		config.Parameters.TargetPort,
 		config.Parameters.LocalPort,
@@ -187,6 +190,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Cleanup(ctx context.Context, client *
 		config.Metadata.Name,
 		config.Metadata.Namespace,
 		config.Parameters.Image,
+		config.Parameters.ImageParameters,
 		config.Parameters.ServiceAccountName,
 		config.Parameters.TargetPort,
 		config.Parameters.LocalPort,
