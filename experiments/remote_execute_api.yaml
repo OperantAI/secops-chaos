@@ -1,0 +1,14 @@
+experiments:
+  - metadata:
+      name: remote-execute-api
+      type: remote_execute-api
+      namespace: default
+    parameters:
+      image: alconen/egress_server
+      target_port: 4000
+      path: /experiment/CheckEgress/
+      service_account_name: default
+      local_port: 9500
+      expected_response: 200
+      expected_body: '{"Name":"CheckEgress","Success":true}'
+    
