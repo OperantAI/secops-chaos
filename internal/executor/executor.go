@@ -137,7 +137,7 @@ func (r *RemoteExecutorConfig) OpenLocalPort(ctx context.Context, client *k8s.Cl
 
 	// Build the port forwarder from restconfig
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", r.Namespace, pods.Items[0].Name)
-	hostIP := strings.TrimLeft(client.RestConfig.Host, "htps:/")
+	hostIP := strings.TrimPrefix(strings.TrimPrefix(client.RestConfig.Host, "http://"), "https://")
 	url := url.URL{Scheme: "https", Path: path, Host: hostIP}
 	transport, upgrader, err := spdy.RoundTripperFor(client.RestConfig)
 	if err != nil {
