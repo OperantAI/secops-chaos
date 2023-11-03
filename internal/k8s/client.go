@@ -8,11 +8,17 @@ import (
 	"path/filepath"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
 
-func NewClient() (*kubernetes.Clientset, error) {
+type Client struct {
+	Clientset  *kubernetes.Clientset
+	RestConfig *rest.Config
+}
+
+func NewClient() (*Client, error) {
 	// Create a Kubernetes Client
 	var kubeconfig string
 	if home := homedir.HomeDir(); home != "" {
@@ -23,10 +29,13 @@ func NewClient() (*kubernetes.Clientset, error) {
 		return nil, fmt.Errorf("Failed to create Kubernetes Client: %w", err)
 	}
 
-	client, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create Kubernetes Client: %w", err)
 	}
 
-	return client, nil
+	return &Client{
+		Clientset:  clientset,
+		RestConfig: config,
+	}, nil
 }

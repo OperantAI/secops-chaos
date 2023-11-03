@@ -8,12 +8,12 @@ import (
 	"fmt"
 
 	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 )
 
@@ -50,7 +50,7 @@ func (p *HostPathMountExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
@@ -58,6 +58,7 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kuberne
 		return err
 	}
 	params := hostPathMountExperimentConfig.Parameters
+	clientset := client.Clientset
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: hostPathMountExperimentConfig.Metadata.Name,
@@ -114,11 +115,11 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kuberne
 			},
 		},
 	}
-	_, err = client.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	_, err = clientset.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
-func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
@@ -136,7 +137,8 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *kube
 	listOptions := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app=%s", hostPathMountExperimentConfig.Metadata.Name),
 	}
-	pods, err := client.CoreV1().Pods(hostPathMountExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
+	clientset := client.Clientset
+	pods, err := clientset.CoreV1().Pods(hostPathMountExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -162,12 +164,13 @@ func checkVolumes(pod corev1.Pod, volumePath string) bool {
 	return false
 }
 
-func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return err
 	}
-	return client.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Delete(ctx, hostPathMountExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+	clientset := client.Clientset
+	return clientset.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Delete(ctx, hostPathMountExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
 }
