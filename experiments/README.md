@@ -40,11 +40,11 @@ type Experiment interface {
 	// Technique returns the attack method
 	Technique() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
+	Run(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*Outcome, error)
+	Verify(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) (*Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
+	Cleanup(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error
 }
 ```
 
@@ -88,7 +88,7 @@ type HostPath struct {
 	Path string `yaml:"path"`
 }
 
-func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error {
+func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)

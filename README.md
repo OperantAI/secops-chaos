@@ -30,11 +30,17 @@
 
 ### Installation
 
-``` sh
-go install github.com/operantai/secops-chaos/cmd/secops-chaos@latest
-```
+You can fetch the latest release [here][latest-release-url], or you can build from source.
 
-Go will automatically install it in your `$GOPATH/bin` directory, which should be in your `$PATH`.
+#### Building from Source
+
+To build from source, you'll need to have [Go](https://golang.org/) installed.
+
+```sh
+git clone https://github.com/operantai/secops-chaos
+cd secops-chaos
+make build
+```
 
 ### Usage
 
@@ -69,6 +75,7 @@ Please read the contribution guidelines, [here][contributing-url].
 
 Distributed under the [Apache License 2.0][license-url].
 
+[latest-release-url]: https://github.com/operantai/secops-chaos/releases/latest
 [experiments-dir-url]: https://github.com/operantai/secops-chaos/blob/main/experiments
 [contributing-url]: https://github.com/operantai/secops-chaos/blob/main/CONTRIBUTING.md
 [license-url]: https://github.com/operantai/secops-chaos/blob/main/LICENSE

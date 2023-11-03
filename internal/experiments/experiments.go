@@ -9,7 +9,6 @@ import (
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"github.com/operantai/secops-chaos/internal/verifier"
-	"k8s.io/client-go/kubernetes"
 )
 
 // Experiment is the interface for an experiment
@@ -25,17 +24,17 @@ type Experiment interface {
 	// Technique returns the attack method
 	Technique() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
+	Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
+	Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *kubernetes.Clientset, experimentConfig *ExperimentConfig) error
+	Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
 }
 
 // Runner runs a set of experiments
 type Runner struct {
 	ctx               context.Context
-	client            *kubernetes.Clientset
+	client            *k8s.Client
 	experiments       map[string]Experiment
 	experimentsConfig map[string]*ExperimentConfig
 }
@@ -73,8 +72,11 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	}
 
 	return &Runner{
-		ctx:               ctx,
-		client:            client,
+		ctx: ctx,
+		client: &k8s.Client{
+			Clientset:  client.Clientset,
+			RestConfig: client.RestConfig,
+		},
 		experiments:       experimentMap,
 		experimentsConfig: experimentConfigMap,
 	}
@@ -118,7 +120,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 
 	// if JSON flag is set, print JSON output
 	if writeJSON {
-		k8sVersion, err := k8s.GetK8sVersion(r.client)
+		k8sVersion, err := k8s.GetK8sVersion(r.client.Clientset)
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
