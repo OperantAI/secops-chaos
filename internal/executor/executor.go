@@ -18,29 +18,42 @@ import (
 	"k8s.io/utils/pointer"
 )
 
+const (
+	addr string = "127.0.0.1"
+)
+
 type RemoteExecutorConfig struct {
 	Name       string
 	Namespace  string
 	Image      string
 	Parameters RemoteExecutor
+	Addr       string
+	StopCh     chan struct{}
+	ReadyCh    chan struct{}
+	ErrCh      chan error
+	Out        *bytes.Buffer
+	ErrOut     *bytes.Buffer
+	LocalPort  int32
 }
 
 type RemoteExecutor struct {
 	ServiceAccountName string
 	TargetPort         int32
-	LocalPort          int32
-	ImageParameters    string
+	ImageParameters    []string
 }
-
-type PortForwardConfig struct {
-	StopCh  chan struct{}
-	ReadyCh chan struct{}
-	Out     *bytes.Buffer
-	ErrOut  *bytes.Buffer
+type RemoteExecuteAPI struct {
+	Image              string   `yaml:"image"`
+	ImageParameters    []string `yaml:"image_parameters"`
+	ServiceAccountName string   `yaml:"service_account_name"`
+	Target             Target   `yaml:"target"`
+}
+type Target struct {
+	Port int32  `yaml:"target_port"`
+	Path string `yaml:"path"`
 }
 
 // Executor configurations are meant to be used to execute remote commands on a pod in a cluster.
-func NewExecutorConfig(name, namespace, image, imageParameters, serviceAccountName string, targetPort, localPort int32) *RemoteExecutorConfig {
+func NewExecutorConfig(name, namespace, image string, imageParameters []string, serviceAccountName string, targetPort int32) *RemoteExecutorConfig {
 	return &RemoteExecutorConfig{
 		Name:      name,
 		Namespace: namespace,
@@ -48,9 +61,14 @@ func NewExecutorConfig(name, namespace, image, imageParameters, serviceAccountNa
 		Parameters: RemoteExecutor{
 			ServiceAccountName: serviceAccountName,
 			TargetPort:         targetPort,
-			LocalPort:          localPort,
 			ImageParameters:    imageParameters,
 		},
+		StopCh:  make(chan struct{}, 1),
+		ReadyCh: make(chan struct{}, 1),
+		ErrCh:   make(chan error, 1),
+		Out:     new(bytes.Buffer),
+		ErrOut:  new(bytes.Buffer),
+		Addr:    addr,
 	}
 }
 
@@ -122,17 +140,17 @@ func (r *RemoteExecutorConfig) Deploy(ctx context.Context, client *kubernetes.Cl
 	return err
 }
 
-func (r *RemoteExecutorConfig) OpenLocalPort(ctx context.Context, client *k8s.Client, LocalPort int32, portForwardConfig PortForwardConfig) error {
+func (r *RemoteExecutorConfig) OpenLocalPort(ctx context.Context, client *k8s.Client) (*portforward.PortForwarder, error) {
 	clientset := client.Clientset
 	// Deployments can not be port forwarded to directly, this is similar to how kubectl does it
 	pods, err := clientset.CoreV1().Pods(r.Namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", r.Name)})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Currently only supports one replica in deployment
 	if len(pods.Items) != 1 {
-		return fmt.Errorf("Deployment failed to deploy pods")
+		return nil, fmt.Errorf("Deployment failed to deploy pods")
 	}
 
 	// Build the port forwarder from restconfig
@@ -141,15 +159,15 @@ func (r *RemoteExecutorConfig) OpenLocalPort(ctx context.Context, client *k8s.Cl
 	url := url.URL{Scheme: "https", Path: path, Host: hostIP}
 	transport, upgrader, err := spdy.RoundTripperFor(client.RestConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, &url)
-	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", LocalPort, r.Parameters.TargetPort)}, portForwardConfig.StopCh, portForwardConfig.ReadyCh, portForwardConfig.Out, portForwardConfig.ErrOut)
+	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("0:%d", r.Parameters.TargetPort)}, r.StopCh, r.ReadyCh, r.Out, r.ErrOut)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return forwarder.ForwardPorts()
+	return forwarder, nil
 }
 
 func (r *RemoteExecutorConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset) error {
@@ -161,11 +179,9 @@ func (r *RemoteExecutorConfig) Cleanup(ctx context.Context, client *kubernetes.C
 	return client.CoreV1().Services(r.Namespace).Delete(ctx, r.Name, metav1.DeleteOptions{})
 }
 
-func prepareImageParameters(imageParameters string) []corev1.EnvVar {
+func prepareImageParameters(imageParameters []string) []corev1.EnvVar {
 	var envVar []corev1.EnvVar
-	params := strings.Split(imageParameters, ";")
-
-	for _, param := range params {
+	for _, param := range imageParameters {
 		parts := strings.Split(param, "=")
 		envVar = append(envVar, corev1.EnvVar{
 			Name:  parts[0],

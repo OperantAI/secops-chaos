@@ -1,7 +1,7 @@
 package experiments
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,20 +9,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClientUpperCase(t *testing.T) {
-	expectedBody := "{\"Name\":\"CheckEgress\",\"Success\":true}"
-	expectedStatusCode := 200
+func TestRetrieveAPIResponse(t *testing.T) {
+	testBody := Result{
+		Name: "CheckEgress",
+		URLResult: []URLResult{
+			{
+				URL:     "google.com",
+				Success: true,
+			},
+			{
+				URL:     "blah.com",
+				Success: false,
+			},
+		},
+	}
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, expectedBody)
+		json.NewEncoder(w).Encode(testBody)
 	}))
 	defer testServer.Close()
 
-	body, statusCode, err := retrieveAPIResponse(testServer.URL)
+	result, err := retrieveAPIResponse(testServer.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, expectedBody, body)
-	assert.Equal(t, expectedStatusCode, statusCode)
+	assert.Equal(t, result, &testBody)
 }

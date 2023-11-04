@@ -11,8 +11,13 @@ import (
 )
 
 type Result struct {
-	Name    string
-	Success bool
+	Name      string      `json:"name"`
+	URLResult []URLResult `json:"url_result"`
+}
+
+type URLResult struct {
+	URL     string `json:"url"`
+	Success bool   `json:"success"`
 }
 
 func main() {
@@ -36,30 +41,31 @@ func CheckEgress(w http.ResponseWriter, r *http.Request) {
 
 	endpoints := strings.Split(urls, ",")
 
+	var urlResult []URLResult
+
 	for _, e := range endpoints {
 		resp, err := http.Get(e)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if resp.StatusCode != http.StatusOK {
-			result := Result{
-				Name:    "CheckEgress",
-				Success: false,
-			}
 
-			w.Header().Set("Content-Type", "application/json")
-			if err := json.NewEncoder(w).Encode(result); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			return
+		if resp.StatusCode != http.StatusOK {
+			urlResult = append(urlResult, URLResult{
+				URL:     e,
+				Success: false,
+			})
+		} else if resp.StatusCode == http.StatusOK {
+			urlResult = append(urlResult, URLResult{
+				URL:     e,
+				Success: true,
+			})
 		}
 	}
 
 	result := Result{
-		Name:    "CheckEgress",
-		Success: true,
+		Name:      "CheckEgress",
+		URLResult: urlResult,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
