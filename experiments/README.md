@@ -15,11 +15,12 @@ experiments:
 
 ## Available Experiments
 
-| Type                                                  | Description                                                                                 | Framework |
-|-------------------------------------------------------|---------------------------------------------------------------------------------------------|-----------|
-| [privileged_container](run_privileged_container.yaml) | This experiment attempts to run a privileged container in a namespace                       | MITRE     |
-| [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container         | MITRE     |
-| [cluster_admin_binding](cluster_admin_binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached | MITRE     |
+| Type                                                  | Description                                                                                                                | Framework |
+|-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|-----------|
+| [privileged_container](run_privileged_container.yaml) | This experiment attempts to run a privileged container in a namespace                                                      | MITRE     |
+| [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
+| [cluster_admin_binding](cluster_admin_binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
+| [remote_execute_api](remote_execute_api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
 
 ## Implementing a new Experiment
 
@@ -40,11 +41,11 @@ type Experiment interface {
 	// Technique returns the attack method
 	Technique() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error
+	Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) (*Outcome, error)
+	Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error
+	Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
 }
 ```
 

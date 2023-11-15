@@ -39,3 +39,20 @@ func NewClient() (*Client, error) {
 		RestConfig: config,
 	}, nil
 }
+
+func NewClientInContainer() (*Client, error) {
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		Clientset: clientset,
+	}, nil
+}

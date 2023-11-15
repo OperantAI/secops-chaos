@@ -6,4 +6,6 @@ var ExperimentsRegistry = []Experiment{
 	&HostPathMountExperimentConfig{},
 	&ClusterAdminBindingExperimentConfig{},
 	&ContainerSecretsExperimentConfig{},
+	&RemoteExecuteAPIExperimentConfig{},
+	&ListK8sSecretsConfig{},
 }
