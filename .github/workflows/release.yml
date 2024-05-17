@@ -19,6 +19,11 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v4
         with:
           go-version: '1.21.3'
