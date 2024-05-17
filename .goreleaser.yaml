@@ -17,8 +17,8 @@ dockers:
   - id: executor-server
     dockerfile: "Dockerfile.executor-server"
     image_templates:
-      - "ghcr.io/operant-ai/secops-chaos-executor-server:{{ .Version }}"
-      - "ghcr.io/operant-ai/secops-chaos-executor-server:latest"
+      - "ghcr.io/operantai/secops-chaos-executor-server:{{ .Version }}"
+      - "ghcr.io/operantai/secops-chaos-executor-server:latest"
 archives:
   - format: tar.gz
     name_template: >-
