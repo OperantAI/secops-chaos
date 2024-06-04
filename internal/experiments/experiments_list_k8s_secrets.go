@@ -163,7 +163,7 @@ func (p *ListK8sSecretsConfig) Verify(ctx context.Context, client *k8s.Client, e
 	for _, namespace := range config.Parameters.Namespaces {
 		requestUrl := url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("%s:%d", "127.0.0.1", int32(forwardedPort.Local)),
+			Host:   fmt.Sprintf("%s:%d", pf.Addr(), int32(forwardedPort.Local)),
 			Path:   fmt.Sprintf("%s/%s", path, namespace),
 		}
 		response, err := http.Get(requestUrl.String())
