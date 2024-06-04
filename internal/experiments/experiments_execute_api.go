@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
+	"strings"
 	"time"
 
 	"github.com/operantai/secops-chaos/internal/categories"
@@ -28,7 +28,7 @@ type ExecuteAPI struct {
 type ExecuteAPITargets struct {
 	Target   string              `yaml:"target"`
 	Port     int                 `yaml:"port"`
-	Payloads []ExecuteAPIPayload `yaml:"payload"`
+	Payloads []ExecuteAPIPayload `yaml:"payloads"`
 }
 
 type ExecuteAPIPayload struct {
@@ -45,7 +45,7 @@ type ExecuteAPIResult struct {
 	Description    string    `json:"description"`
 	Timestamp      time.Time `json:"timestamp"`
 	Status         int       `json:"status"`
-	Response       string    `json:"byte"`
+	Response       string    `json:"response"`
 }
 
 func (p *ExecuteAPIExperimentConfig) Type() string {
@@ -87,11 +87,16 @@ func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client
 		for _, payload := range target.Payloads {
 			url := url.URL{
 				Scheme: "http",
-				Host:   fmt.Sprintf("%s:%d", pf.Addr(), forwardedPort),
+				Host:   fmt.Sprintf("%s:%d", pf.Addr(), forwardedPort.Local),
 				Path:   payload.Path,
 			}
 
-			req, err := http.NewRequest(payload.Method, url.String(), nil)
+			var requestBody io.Reader
+			if payload.Payload != "" {
+				requestBody = strings.NewReader(payload.Payload)
+			}
+
+			req, err := http.NewRequest(payload.Method, url.String(), requestBody)
 			if err != nil {
 				return err
 			}
@@ -106,7 +111,7 @@ func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client
 			}
 			defer response.Body.Close()
 
-			body, err := io.ReadAll(response.Body)
+			responseBody, err := io.ReadAll(response.Body)
 			if err != nil {
 				return err
 			}
@@ -116,7 +121,7 @@ func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client
 				ExperimentName: config.Metadata.Name,
 				Timestamp:      time.Now(),
 				Status:         response.StatusCode,
-				Response:       string(body),
+				Response:       string(responseBody),
 			}
 		}
 
@@ -173,11 +178,11 @@ func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Cli
 				if !found {
 					continue
 				}
-				if result.Response != payload.ExpectedResponse {
-					v.Fail(payload.Description)
+				if result.Response == payload.ExpectedResponse {
+					v.Success(payload.Description)
 					continue
 				}
-				v.Success(payload.Description)
+				v.Fail(payload.Description)
 			}
 		}
 	}
@@ -193,7 +198,7 @@ func (p *ExecuteAPIExperimentConfig) Cleanup(ctx context.Context, client *k8s.Cl
 		return err
 	}
 
-	if err := os.Remove("test.txt"); err != nil {
+	if err := removeTempFilesForExperiment(p.Type(), config.Metadata.Name); err != nil {
 		return err
 	}
 
