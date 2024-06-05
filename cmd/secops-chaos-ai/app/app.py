@@ -62,7 +62,7 @@ def register_routes(
                 completion = client.chat.completions.create(
                     model="gpt-4o",
                     messages = [
-                        experiment.system_prompt,
+                        {"role": "system", "content": experiment.system_prompt},
                         {"role": "user", "content": experiment.prompt}
                     ]
                 )
