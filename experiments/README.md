@@ -21,6 +21,7 @@ experiments:
 | [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
 | [cluster_admin_binding](cluster_admin_binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
 | [remote_execute_api](remote_execute_api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
+| [execute_api](execute_api.yaml)                       | This experiment attempts to call a service with a payload                                                                  | MITRE     |
 
 ## Implementing a new Experiment
 
