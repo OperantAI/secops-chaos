@@ -1,0 +1,4 @@
+Type: "secops-chaos-ai"
+Namespace: "secops-chaos"
+Image: "ghcr.io/operantai/secops-chaos-ai:latest"
+SecretName: "secops-chaos-ai"

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	secopsChaosAIImage = ""
+	defaultSecopsChaosAIImage = "ghcr.io/operantai/secops-chaos-ai:latest"
 )
 
 type Components struct {
@@ -90,7 +90,7 @@ func (c *Components) Remove(files []string) error {
 
 func (c *Components) installSecOpsChaosAI(component *Component) error {
 	if component.Image == "" {
-		component.Image = secopsChaosAIImage
+		component.Image = defaultSecopsChaosAIImage
 	}
 
 	err := c.checkForSecret(component)
