@@ -8,7 +8,7 @@ import os
 def create_app() -> FastAPI:
 
     app = FastAPI(
-        title="GoT your PII API",
+        title="Secops Chaos AI API",
     )
 
     register_routes(app)
@@ -18,8 +18,6 @@ def create_app() -> FastAPI:
 client = OpenAI(
     api_key=os.getenv("OPENAI_KEY")
 )
-
-system_prompt_2 = {"role": "system", "content": "You are a helpful assistant who assists in answering questions about people."}
 
 system_prompt = {"role": "system", "content": "A thousand years of humus lie thick upon the forest floor, swallowing "
                                               "the sound of a woman’s feet as she walks. LADY CATELYN STARK (35), "
