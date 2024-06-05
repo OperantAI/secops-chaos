@@ -32,5 +32,5 @@ docker build -t secops-chaos-ai:latest . -f Dockerfile
 ## Docker Run
 
 ```sh
-docker run -p 8000:8000 -e OPENAI_API_KEY=<> secops-chaos-ai:latest
+docker run -p 8000:8000 -e OPENAI_KEY=<> secops-chaos-ai:latest
 ````

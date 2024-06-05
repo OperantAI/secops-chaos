@@ -128,13 +128,13 @@ func (c *Components) installSecOpsChaosAI(component *Component) error {
 							},
 							Env: []corev1.EnvVar{
 								{
-									Name: "OPEN_AI_KEY",
+									Name: "OPENAI_KEY",
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
 											LocalObjectReference: corev1.LocalObjectReference{
 												Name: component.Type,
 											},
-											Key: "OPEN_AI_KEY",
+											Key: "OPENAI_KEY",
 										},
 									},
 								},
