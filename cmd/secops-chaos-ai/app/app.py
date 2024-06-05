@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from typing import List
 from pydantic import BaseModel
+from .verifiers import AIExperimentVerifierResult
+from .sensitive_data_verifier import VerifySensitiveData
 import os
 
 def create_app() -> FastAPI:
@@ -33,10 +35,7 @@ def register_routes(
     async def root():
         return {"message": "Hello World"}
 
-    class AIExperimentVerifierResponse(BaseModel):
-        check: str
-        detected: bool
-        score: float
+
 
     class AIExperiment(BaseModel):
         model: str
@@ -51,8 +50,8 @@ def register_routes(
         ai_api: str
         prompt: str
         api_response: str
-        verified_prompt_checks: List[AIExperimentVerifierResponse]
-        verified_response_checks: List[AIExperimentVerifierResponse]
+        verified_prompt_checks: List[AIExperimentVerifierResult]
+        verified_response_checks: List[AIExperimentVerifierResult]
 
 
     @app.post("/ai-experiments")
@@ -69,10 +68,17 @@ def register_routes(
                 verified_prompt_checks = list()
                 verified_response_checks = list()
                 for check in experiment.verify_prompt_checks:
-                    verified_prompt_checks.append(AIExperimentVerifierResponse(check=check, detected=bool(False), score=0.0)) #TODO plug-in checkers
-
+                    match check:
+                        case "PII":
+                            results = VerifySensitiveData(check, experiment.system_prompt + experiment.prompt)
+                            for i in results:
+                                verified_prompt_checks.append(i)
                 for check in experiment.verify_response_checks:
-                    verified_response_checks.append(AIExperimentVerifierResponse(check=check, detected=bool(False), score=0.0)) #TODO plug-in checkers
+                    match check:
+                        case "PII":
+                            results = VerifySensitiveData(check, completion.choices[0].message.content)
+                            for i in results:
+                                verified_response_checks.append(i)
 
                 return AIExperimentResponse(model=experiment.model, ai_api=experiment.ai_api, prompt=experiment.prompt,
                                             api_response=completion.choices[0].message.content, verified_prompt_checks=verified_prompt_checks,
