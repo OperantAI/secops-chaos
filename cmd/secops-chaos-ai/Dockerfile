@@ -24,9 +24,10 @@ WORKDIR $HOME/app
 COPY --chown=user:user ./cmd/secops-chaos-ai/pyproject.toml ./
 COPY --chown=user:user ./cmd/secops-chaos-ai/app ./app
 
-
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
+
+RUN python -m spacy download en_core_web_sm
 
 COPY --chown=user:user ./cmd/secops-chaos-ai/entrypoint.sh ./
 

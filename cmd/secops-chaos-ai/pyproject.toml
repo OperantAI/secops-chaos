@@ -14,6 +14,9 @@ dependencies = [
   "pydantic==1.10.14",
   "openai==1.30.5",
   "uvicorn[standard]>=0.29",
+  "presidio-analyzer[transformers]==2.2.354",
+  "presidio-anonymizer==2.2.354",
+  "transformers==4.38.2",
 ]
 
 [tool.setuptools]
