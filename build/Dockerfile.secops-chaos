@@ -1,0 +1,20 @@
+FROM golang:bullseye as build
+
+WORKDIR /app
+
+COPY . .
+
+RUN apt-get update
+RUN apt-get install -y git ca-certificates
+
+RUN mkdir -p /app/bin
+
+ENV CGO_ENABLED=0
+RUN go build \
+    -o bin \
+    ./cmd/secops-chaos
+
+FROM gcr.io/distroless/base-debian11
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /app/bin/* /app/bin/
+CMD ["/app/bin/secops-chaos"]
