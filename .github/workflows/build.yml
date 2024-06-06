@@ -43,7 +43,7 @@ jobs:
           images: |
             ghcr.io/operantai/${{matrix.image}}
           tags: |
-            type=ref,even=branch
+            type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
