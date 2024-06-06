@@ -55,6 +55,9 @@ func (c *Components) Add(files []string) error {
 		}
 
 		output.WriteInfo("Adding component %s to Cluster", component.Type)
+		if err := c.checkNamespaceExists(&component); err != nil {
+			return err
+		}
 		switch component.Type {
 		case "secops-chaos-ai":
 			return c.installSecOpsChaosAI(&component)
@@ -182,6 +185,14 @@ func (c *Components) uninstallSecOpsChaosAI(component *Component) error {
 	err = c.k8s.Clientset.CoreV1().Services(component.Namespace).Delete(c.ctx, component.Type, metav1.DeleteOptions{})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (c *Components) checkNamespaceExists(component *Component) error {
+	_, err := c.k8s.Clientset.CoreV1().Namespaces().Get(c.ctx, component.Namespace, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("Could not find namespace: %w", err)
 	}
 	return nil
 }
