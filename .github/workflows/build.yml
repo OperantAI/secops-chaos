@@ -30,7 +30,7 @@ jobs:
 
     strategy:
       matrix:
-        image: [ "", "" ]
+        image: [ "secops-chaos", "secops-chaos-ai", "secops-chaos-executor" ]
 
     steps:
       - name: Checkout
