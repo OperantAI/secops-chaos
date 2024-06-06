@@ -2,7 +2,8 @@ name: Build
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "dev"
     tags:
       - "v*.*.*"
   pull_request:
@@ -27,6 +28,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: go-build-test
+    permissions: write-all
 
     strategy:
       matrix:
@@ -41,7 +43,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/operantai/${{matrix.image}}
+            ghcr.io/${{ github.repo }}/${{matrix.image}}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
