@@ -120,7 +120,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 
 	// if JSON flag is set, print JSON output
 	if writeJSON {
-		k8sVersion, err := k8s.GetK8sVersion(r.client.Clientset)
+		k8sVersion, err := r.client.GetK8sVersion()
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}

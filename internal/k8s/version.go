@@ -5,12 +5,10 @@ package k8s
 
 import (
 	k8sVersion "k8s.io/apimachinery/pkg/version"
-
-	"k8s.io/client-go/kubernetes"
 )
 
-func GetK8sVersion(client *kubernetes.Clientset) (*k8sVersion.Info, error) {
-	version, err := client.Discovery().ServerVersion()
+func (c *Client) GetK8sVersion() (*k8sVersion.Info, error) {
+	version, err := c.Clientset.Discovery().ServerVersion()
 	if err != nil {
 		return nil, err
 	}
