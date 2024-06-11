@@ -71,7 +71,7 @@ Once you've successfully run the experiment, you can verify if it was sucessful 
 secops-chaos experiment verify -f experiments/host_path_volume.yaml
 ```
 
-You can also output a JSON with the verifier results by using the `-j` flag.
+You can also output in various formats using `-o json` or `-o yaml`
 
 #### Components
 

@@ -19,18 +19,18 @@ type Verifier struct {
 
 // Outcome is the result of an experiment
 type Outcome struct {
-	Experiment  string            `json:"experiment"`
-	Description string            `json:"description"`
-	Framework   string            `json:"framework"`
-	Tactic      string            `json:"tactic"`
-	Technique   string            `json:"technique"`
-	Result      map[string]string `json:"result"`
+	Experiment  string            `json:"experiment" yaml:"experiment"`
+	Description string            `json:"description" yaml:"description"`
+	Framework   string            `json:"framework" yaml:"framework"`
+	Tactic      string            `json:"tactic" yaml:"tactic"`
+	Technique   string            `json:"technique" yaml:"technique"`
+	Result      map[string]string `json:"result" yaml:"result"`
 }
 
-// JSONOutput is a pretty-printed JSON output of the verifier
-type JSONOutput struct {
-	K8sVersion string     `json:"k8s_version"`
-	Results    []*Outcome `json:"results"`
+// StructuredOutput is a pretty-printed JSON or YAML  output of the verifier
+type StructuredOutput struct {
+	K8sVersion string     `json:"k8s_version" yaml:"k8s_version"`
+	Results    []*Outcome `json:"results" yaml:"results"`
 }
 
 // New returns a new Verifier instance

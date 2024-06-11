@@ -44,7 +44,7 @@ var verifyCmd = &cobra.Command{
 		if err != nil {
 			output.WriteError("Error reading file flag: %v", err)
 		}
-		outputJSON, err := cmd.Flags().GetBool("json")
+		outputFormat, err := cmd.Flags().GetString("output")
 		if err != nil {
 			output.WriteError("Error reading json output flag: %v", err)
 		}
@@ -52,7 +52,7 @@ var verifyCmd = &cobra.Command{
 		// Run the verifiers
 		ctx := cmd.Context()
 		er := experiments.NewRunner(ctx, files)
-		er.RunVerifiers(outputJSON)
+		er.RunVerifiers(outputFormat)
 	},
 }
 
@@ -91,5 +91,5 @@ func init() {
 	_ = cleanCmd.MarkFlagRequired("file")
 
 	// Output the results in JSON format
-	verifyCmd.Flags().BoolP("json", "j", false, "Output results in JSON format")
+	verifyCmd.Flags().StringP("output", "o", "", "Output results in provided format (json|yaml)")
 }
