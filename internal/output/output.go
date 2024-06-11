@@ -89,7 +89,7 @@ func WriteJSON(output interface{}) {
 func WriteYAML(output interface{}) {
 	yamlOutput, err := yaml.Marshal(output)
 	if err != nil {
-		WriteError("Failed to marshal YAML: %w", err)
+		WriteError("Failed to marshal YAML: %s", err)
 	}
 	fmt.Println(string(yamlOutput))
 }
