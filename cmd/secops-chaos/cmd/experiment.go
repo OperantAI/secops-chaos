@@ -91,5 +91,5 @@ func init() {
 	_ = cleanCmd.MarkFlagRequired("file")
 
 	// Output the results in JSON format
-	verifyCmd.Flags().StringP("output", "o", "", "Output results in provided format (json|yaml)")
+	verifyCmd.Flags().StringP("output", "o", "", "Output results in the provided format (json|yaml)")
 }
