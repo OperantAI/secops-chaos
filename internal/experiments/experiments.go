@@ -121,7 +121,7 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 
 	// if output flag is set, print JSON or YAML output
 	if outputFormat != "" {
-		k8sVersion, err := k8s.GetK8sVersion(r.client.Clientset)
+		k8sVersion, err := r.client.GetK8sVersion()
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
