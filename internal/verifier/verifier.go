@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	// Success is the string used to represent a successful test
+	// Success is the string used to represent a successful experiment
 	Success = "success"
-	// Fail is the string used to represent a failed test
+	// Fail is the string used to represent a failed experiment
 	Fail = "fail"
 )
 
@@ -48,20 +48,20 @@ func New(experiment, description, framework, tactic, technique string) *Verifier
 }
 
 // Success increments the successful and total counters
-func (v *Verifier) Success(test string) {
-	if test == "" {
+func (v *Verifier) Success(experiment string) {
+	if experiment == "" {
 		v.outcome.Result[v.outcome.Experiment] = Success
 	} else {
-		v.outcome.Result[test] = Success
+		v.outcome.Result[experiment] = Success
 	}
 }
 
 // Fail increments the total counter
-func (v *Verifier) Fail(test string) {
-	if test == "" {
+func (v *Verifier) Fail(experiment string) {
+	if experiment == "" {
 		v.outcome.Result[v.outcome.Experiment] = Fail
 	} else {
-		v.outcome.Result[test] = Fail
+		v.outcome.Result[experiment] = Fail
 	}
 }
 

@@ -82,43 +82,20 @@ func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k
 		return nil, err
 	}
 
-	executorConfig := executor.NewExecutorConfig(
-		config.Metadata.Name,
-		config.Metadata.Namespace,
-		config.Parameters.Image,
-		config.Parameters.ImageParameters,
-		config.Parameters.ServiceAccountName,
-		config.Parameters.Target.Port,
-	)
-
-	forwarder, err := executorConfig.OpenLocalPort(ctx, client)
+	pf := client.NewPortForwarder(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	go func() {
-		err = forwarder.ForwardPorts()
-		if err != nil {
-			executorConfig.ErrCh <- fmt.Errorf("Local Port Failed to open: %w", err)
-		}
-	}()
-
-	// Waits until local port is ready or open errors
-	select {
-	case <-executorConfig.ReadyCh:
-		break
-	case err := <-executorConfig.ErrCh:
+	defer pf.Stop()
+	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", config.Metadata.Name), int(config.Parameters.Target.Port))
+	if err != nil {
 		return nil, err
 	}
 
 	path := config.Parameters.Target.Path
-	ports, err := forwarder.GetPorts()
-	if err != nil {
-		return nil, err
-	}
 	url := url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", executorConfig.Addr, int32(ports[0].Local)),
+		Host:   fmt.Sprintf("%s:%d", pf.Addr(), int32(forwardedPort.Local)),
 		Path:   path,
 	}
 
@@ -130,7 +107,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k
 		config.Technique(),
 	)
 
-	result, err := retrieveAPIResponse(url.String())
+	result, err := p.retrieveAPIResponse(url.String())
 	if err != nil {
 		return nil, err
 	}
@@ -143,11 +120,10 @@ func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k
 		}
 	}
 
-	close(executorConfig.StopCh)
 	return v.GetOutcome(), nil
 }
 
-func retrieveAPIResponse(url string) (*Result, error) {
+func (p *RemoteExecuteAPIExperimentConfig) retrieveAPIResponse(url string) (*Result, error) {
 	var result Result
 	response, err := http.Get(url)
 	if err != nil {

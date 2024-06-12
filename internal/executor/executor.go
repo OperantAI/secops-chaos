@@ -1,20 +1,13 @@
 package executor
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"net/http"
-	"net/url"
 	"strings"
 
-	"github.com/operantai/secops-chaos/internal/k8s"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 	"k8s.io/utils/pointer"
 )
 
@@ -27,13 +20,6 @@ type RemoteExecutorConfig struct {
 	Namespace  string
 	Image      string
 	Parameters RemoteExecutor
-	Addr       string
-	StopCh     chan struct{}
-	ReadyCh    chan struct{}
-	ErrCh      chan error
-	Out        *bytes.Buffer
-	ErrOut     *bytes.Buffer
-	LocalPort  int32
 }
 
 type RemoteExecutor struct {
@@ -63,12 +49,6 @@ func NewExecutorConfig(name, namespace, image string, imageParameters []string, 
 			TargetPort:         targetPort,
 			ImageParameters:    imageParameters,
 		},
-		StopCh:  make(chan struct{}, 1),
-		ReadyCh: make(chan struct{}, 1),
-		ErrCh:   make(chan error, 1),
-		Out:     new(bytes.Buffer),
-		ErrOut:  new(bytes.Buffer),
-		Addr:    addr,
 	}
 }
 
@@ -138,36 +118,6 @@ func (r *RemoteExecutorConfig) Deploy(ctx context.Context, client *kubernetes.Cl
 
 	_, err = client.CoreV1().Services(r.Namespace).Create(ctx, service, metav1.CreateOptions{})
 	return err
-}
-
-func (r *RemoteExecutorConfig) OpenLocalPort(ctx context.Context, client *k8s.Client) (*portforward.PortForwarder, error) {
-	clientset := client.Clientset
-	// Deployments can not be port forwarded to directly, this is similar to how kubectl does it
-	pods, err := clientset.CoreV1().Pods(r.Namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", r.Name)})
-	if err != nil {
-		return nil, err
-	}
-
-	// Currently only supports one replica in deployment
-	if len(pods.Items) != 1 {
-		return nil, fmt.Errorf("Deployment failed to deploy pods")
-	}
-
-	// Build the port forwarder from restconfig
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", r.Namespace, pods.Items[0].Name)
-	hostIP := strings.TrimPrefix(strings.TrimPrefix(client.RestConfig.Host, "http://"), "https://")
-	url := url.URL{Scheme: "https", Path: path, Host: hostIP}
-	transport, upgrader, err := spdy.RoundTripperFor(client.RestConfig)
-	if err != nil {
-		return nil, err
-	}
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, &url)
-	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("0:%d", r.Parameters.TargetPort)}, r.StopCh, r.ReadyCh, r.Out, r.ErrOut)
-	if err != nil {
-		return nil, err
-	}
-
-	return forwarder, nil
 }
 
 func (r *RemoteExecutorConfig) Cleanup(ctx context.Context, client *kubernetes.Clientset) error {

@@ -29,7 +29,8 @@ func TestRetrieveAPIResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	result, err := retrieveAPIResponse(testServer.URL)
+	config := RemoteExecuteAPIExperimentConfig{}
+	result, err := config.retrieveAPIResponse(testServer.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
