@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	ltable "github.com/charmbracelet/lipgloss/table"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -82,4 +83,13 @@ func WriteJSON(output interface{}) {
 		WriteError("Failed to marshal JSON: %s", err)
 	}
 	fmt.Println(string(jsonOutput))
+}
+
+// WriteYAML writes the given output as a pretty printed YAML object to stdout
+func WriteYAML(output interface{}) {
+	yamlOutput, err := yaml.Marshal(output)
+	if err != nil {
+		WriteError("Failed to marshal YAML: %s", err)
+	}
+	fmt.Println(string(yamlOutput))
 }

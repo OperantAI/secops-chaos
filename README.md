@@ -62,29 +62,26 @@ Each experiment is defined by a `experiment` file which allows you to tweak your
 For a full list of experiments you can run, see the [experiments][experiments-dir-url] directory.
 
 ``` sh
-secops-chaos experiment run -f experiments/host_path_volume.yaml
+$ secops-chaos experiment run -f experiments/host_path_volume.yaml
 ```
 
 Once you've successfully run the experiment, you can verify if it was sucessful or not:
 
 ```sh
-secops-chaos experiment verify -f experiments/host_path_volume.yaml
+$ secops-chaos experiment verify -f experiments/host_path_volume.yaml
 ```
 
-You can also output a JSON with the verifier results by using the `-j` flag.
+You can also output in various formats using `-o json` or `-o yaml`
 
 #### Components
 
 Some experiments require additional applications installed to run or enhance their functionality.
 
-These can be added by providing a YAML file, see the [components](components-dir-url) directory for examples.
+These can be added by providing a YAML file, see the [components][components-dir-url] directory for examples.
 
 ```sh
-secops-chaos component install -f components/secops-chaos-ai.yaml
-```
-
-```sh
-secops-chaos component uninstall -f components/secops-chaos-ai.yaml
+$ secops-chaos component install -f components/secops-chaos-ai.yaml
+$ secops-chaos component uninstall -f components/secops-chaos-ai.yaml
 ```
 
 Experiments that need a component will warn you, and allow for installation during runtime.
