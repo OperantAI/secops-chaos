@@ -5,6 +5,7 @@ package experiments
 
 import (
 	"context"
+	"strings"
 
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
@@ -94,7 +95,7 @@ func (r *Runner) Run() {
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
-func (r *Runner) RunVerifiers(writeJSON bool) {
+func (r *Runner) RunVerifiers(outputFormat string) {
 	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
 	outcomes := []*verifier.Outcome{}
 	for _, e := range r.experimentsConfig {
@@ -104,7 +105,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
 		// if JSON flag is set, append to JSON output
-		if writeJSON {
+		if outputFormat != "" {
 			outcomes = append(outcomes, outcome)
 		} else {
 			table.AddRow([]string{
@@ -118,16 +119,24 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		}
 	}
 
-	// if JSON flag is set, print JSON output
-	if writeJSON {
-		k8sVersion, err := r.client.GetK8sVersion()
+	// if output flag is set, print JSON or YAML output
+	if outputFormat != "" {
+		k8sVersion, err := k8s.GetK8sVersion(r.client.Clientset)
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
-		output.WriteJSON(verifier.JSONOutput{
+		structuredOutput := verifier.StructuredOutput{
 			K8sVersion: k8sVersion.String(),
 			Results:    outcomes,
-		})
+		}
+		switch strings.ToLower(outputFormat) {
+		case "json":
+			output.WriteJSON(structuredOutput)
+		case "yaml":
+			output.WriteYAML(structuredOutput)
+		default:
+			output.WriteError("Unknown output format: %s", outputFormat)
+		}
 		return
 	}
 
