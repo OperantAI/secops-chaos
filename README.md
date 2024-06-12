@@ -77,7 +77,7 @@ You can also output in various formats using `-o json` or `-o yaml`
 
 Some experiments require additional applications installed to run or enhance their functionality.
 
-These can be added by providing a YAML file, see the [components](components-dir-url) directory for examples.
+These can be added by providing a YAML file, see the [components][components-dir-url] directory for examples.
 
 ```sh
 secops-chaos component install -f components/secops-chaos-ai.yaml
