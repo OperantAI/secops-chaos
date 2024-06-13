@@ -23,14 +23,14 @@ type ContainerSecretsExperimentConfig struct {
 }
 
 type ContainerSecrets struct {
-	ConfigMapCheck bool                  `yaml:"config_map_check"`
-	PodEnvCheck    bool                  `yaml:"pod_env_check"`
+	ConfigMapCheck bool                  `yaml:"configMapCheck"`
+	PodEnvCheck    bool                  `yaml:"podEnvCheck"`
 	Env            []ContainerSecretsEnv `yaml:"env"`
 }
 
 type ContainerSecretsEnv struct {
-	EnvKey   string `yaml:"env_key"`
-	EnvValue string `yaml:"env_value"`
+	EnvKey   string `yaml:"envKey"`
+	EnvValue string `yaml:"envValue"`
 }
 
 func (p *ContainerSecretsExperimentConfig) Type() string {

@@ -9,7 +9,7 @@ experiments:
       type: prvileged-container # The type of experiment, see table below for a list of valid types
       namespace: my-namespace # What namespace to apply the experiment to
     parameters: # Parameters holds the settings for your experiment, tweak them to suit your needs.
-        host-pid: true 
+        hostPid: true 
 ```
 
 
@@ -17,18 +17,11 @@ experiments:
 
 | Type                                                  | Description                                                                                                                | Framework |
 |-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|-----------|
-<<<<<<< Updated upstream
-| [privileged_container](run_privileged_container.yaml) | This experiment attempts to run a privileged container in a namespace                                                      | MITRE     |
-| [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
-| [cluster_admin_binding](cluster_admin_binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
-| [remote_execute_api](remote_execute_api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
-| [execute_api](execute_api.yaml)                       | This experiment attempts to call a service with a payload                                                                  | MITRE     |
-=======
 | [privileged-container](run-privileged-container.yaml) | This experiment attempts to run a privileged container in a namespace                                                      | MITRE     |
 | [host-path-mount](host-path-volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
 | [cluster-admin-binding](cluster-admin-binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
 | [remote-execute-api](remote-execute-api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
->>>>>>> Stashed changes
+| [execute-api](execute-api.yaml)                       | This experiment attempts to call a service with a payload                                                                  | MITRE     |
 
 ## Implementing a new Experiment
 
@@ -90,7 +83,7 @@ type HostPathMountExperimentConfig struct {
 }
 
 type HostPathMount struct {
-	HostPath HostPath `yaml:"host-path"`
+	HostPath HostPath `yaml:"hostPath"`
 }
 
 type HostPath struct {

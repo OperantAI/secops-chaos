@@ -5,11 +5,11 @@ experiments:
       namespace: default
     parameters:
       image: alconen/egress-server
-      image-parameters: 
+      imageParameters: 
         - "URLS=https://google.com,https://linkedin.com,https://openai.com"
         - "EXAMPLE=example"
       target:
-        target-port: 4000
+        targetPort: 4000
         path: /experiment/CheckEgress/
-      service-account-name: default
+      serviceAccountName: default
     

@@ -23,7 +23,7 @@ type HostPathMountExperimentConfig struct {
 }
 
 type HostPathMount struct {
-	HostPath HostPath `yaml:"host_path"`
+	HostPath HostPath `yaml:"hostPath"`
 }
 
 type HostPath struct {

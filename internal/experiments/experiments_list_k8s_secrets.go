@@ -26,7 +26,7 @@ type ListK8sSecretsConfig struct {
 }
 
 type K8sSecretsParameters struct {
-	ExecutorConfig executor.RemoteExecuteAPI `yaml:"executor_config"`
+	ExecutorConfig executor.RemoteExecuteAPI `yaml:"executorConfig"`
 	Namespaces     []string                  `yaml:"namespaces"`
 }
 

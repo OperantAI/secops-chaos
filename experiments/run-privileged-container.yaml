@@ -5,6 +5,6 @@ experiments:
       namespace: default
     parameters:
       privileged: true
-      host-pid: true
-      host-network: true
-      run-as-root: true
+      hostPid: true
+      hostNetwork: true
+      runAsRoot: true

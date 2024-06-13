@@ -4,5 +4,5 @@ experiments:
       type: host-path-mount
       namespace: default
     parameters:
-      host-path:
+      hostPath:
         path: /proc
