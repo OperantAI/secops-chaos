@@ -10,3 +10,11 @@ var ExperimentsRegistry = []Experiment{
 	&ExecuteAPIExperimentConfig{},
 	&ListK8sSecretsConfig{},
 }
+
+func ListExperiments() map[string]string {
+	experiments := make(map[string]string)
+	for _, experiment := range ExperimentsRegistry {
+		experiments[experiment.Type()] = experiment.Description()
+	}
+	return experiments
+}

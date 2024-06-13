@@ -33,11 +33,11 @@ type URLResult struct {
 }
 
 func (p *RemoteExecuteAPIExperimentConfig) Type() string {
-	return "remote_execute_api"
+	return "remote-execute-api"
 }
 
 func (p *RemoteExecuteAPIExperimentConfig) Description() string {
-	return "This experiment runs a deployment based on a configurable image and then verifies based off of API calls to that image"
+	return "Runs a deployment based on a configurable image and then verifies based off of API calls to that image"
 }
 func (p *RemoteExecuteAPIExperimentConfig) Technique() string {
 	return categories.MITRE.Execution.NewContainer.Technique

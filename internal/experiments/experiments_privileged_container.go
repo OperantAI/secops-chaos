@@ -33,11 +33,11 @@ type PrivilegedContainer struct {
 }
 
 func (p *PrivilegedContainerExperimentConfig) Type() string {
-	return "privileged_container"
+	return "privileged-container"
 }
 
 func (p *PrivilegedContainerExperimentConfig) Description() string {
-	return "This experiment attempts to run a privileged container in a namespace"
+	return "Run a privileged container in a namespace"
 }
 
 func (p *PrivilegedContainerExperimentConfig) Technique() string {

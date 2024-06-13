@@ -26,11 +26,11 @@ type ClusterAdminBindingExperimentConfig struct {
 type ClusterAdminBinding struct{}
 
 func (p *ClusterAdminBindingExperimentConfig) Type() string {
-	return "cluster_admin_binding"
+	return "cluster-admin-binding"
 }
 
 func (p *ClusterAdminBindingExperimentConfig) Description() string {
-	return "This experiment attempts to create a container with the cluster-admin role binding attached"
+	return "Create a container with the cluster-admin role binding attached"
 }
 
 func (p *ClusterAdminBindingExperimentConfig) Technique() string {

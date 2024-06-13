@@ -31,11 +31,11 @@ type K8sSecretsParameters struct {
 }
 
 func (p *ListK8sSecretsConfig) Type() string {
-	return "list_kubernetes_secrets"
+	return "list-kubernetes-secrets"
 }
 
 func (p *ListK8sSecretsConfig) Description() string {
-	return "This experiment attempts to list Kubernetes secrets in different namespaces from within a container"
+	return "List Kubernetes secrets in namespaces from within a container"
 }
 
 func (p *ListK8sSecretsConfig) Technique() string {

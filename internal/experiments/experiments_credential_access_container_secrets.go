@@ -34,11 +34,11 @@ type ContainerSecretsEnv struct {
 }
 
 func (p *ContainerSecretsExperimentConfig) Type() string {
-	return "credential_access_container_secrets"
+	return "credential-access-container-secrets"
 }
 
 func (p *ContainerSecretsExperimentConfig) Description() string {
-	return "This experiment attempts to add secrets to a config map and within a container's environment variables"
+	return "Add secrets to a config map and within a container's environment variables"
 }
 
 func (p *ContainerSecretsExperimentConfig) Technique() string {

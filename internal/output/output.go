@@ -62,13 +62,13 @@ func (t *table) AddRow(row []string) {
 // Render renders the table, printing it to stdout
 func (t *table) Render() {
 	tbl := ltable.New().
-		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case col == 1:
-				return lipgloss.NewStyle().Width(40)
-			}
-			return lipgloss.Style{}
-		}).
+		// StyleFunc(func(row, col int) lipgloss.Style {
+		// 	switch {
+		// 	case col == 1:
+		// 		return lipgloss.NewStyle().Width(40)
+		// 	}
+		// 	return lipgloss.Style{}
+		// }).
 		Border(lipgloss.NormalBorder()).
 		Headers(t.headers...).
 		Rows(t.rows...)

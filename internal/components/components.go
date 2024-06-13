@@ -9,187 +9,100 @@ import (
 	"github.com/operantai/secops-chaos/internal/output"
 
 	"gopkg.in/yaml.v3"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
 )
 
-const (
-	defaultSecopsChaosAIImage = "ghcr.io/operantai/secops-chaos-ai:latest"
-)
+var registry = map[string]Component{
+	"secops-chaos-ai": &AI{},
+}
 
-type Components struct {
+type Installer struct {
 	ctx context.Context
 	k8s *k8s.Client
 }
 
-type Component struct {
+type Component interface {
+	// Type returns the type of component
+	Type() string
+	// Description describes what the component does in a brief sentence
+	Description() string
+	// Install installs the Component to the Kubernetes Cluster
+	Install(ctx context.Context, client *k8s.Client, config *Config) error
+	// Uninstall uninstalls the Compoent from the Kubernetes Cluster
+	Uninstall(ctx context.Context, client *k8s.Client, config *Config) error
+}
+
+type Config struct {
 	Type       string `yaml:"type"`
 	Namespace  string `yaml:"namespace"`
 	Image      string `yaml:"image"`
 	SecretName string `yaml:"secretName"`
 }
 
-func New(ctx context.Context) *Components {
+func New(ctx context.Context) *Installer {
 	k8sClient, err := k8s.NewClient()
 	if err != nil {
 		output.WriteFatal("Error creating Kubernetes Client: %v", err)
 	}
-	return &Components{
+	return &Installer{
 		ctx: ctx,
 		k8s: k8sClient,
 	}
 }
 
-func (c *Components) Add(files []string) error {
+func ListComponents() map[string]string {
+	components := make(map[string]string)
+	for _, component := range registry {
+		components[component.Type()] = component.Description()
+	}
+	return components
+}
+
+func (i *Installer) Add(files []string) error {
 	for _, file := range files {
 		contents, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}
-		var component Component
-		if err := yaml.Unmarshal(contents, &component); err != nil {
+		var config Config
+		if err := yaml.Unmarshal(contents, &config); err != nil {
 			return err
 		}
 
-		output.WriteInfo("Adding component %s to Cluster", component.Type)
-		if err := c.checkNamespaceExists(&component); err != nil {
+		output.WriteInfo("Adding component %s to Cluster", config.Type)
+		if err := i.checkNamespaceExists(&config); err != nil {
 			return err
 		}
-		switch component.Type {
-		case "secops-chaos-ai":
-			return c.installSecOpsChaosAI(&component)
-		default:
-			return fmt.Errorf("Unknown component %s", component.Type)
+		component := registry[config.Type]
+		if err := component.Install(i.ctx, i.k8s, &config); err != nil {
+			output.WriteFatal("Could not install component: %s", config.Type)
 		}
 	}
 	return nil
 }
 
-func (c *Components) Remove(files []string) error {
+func (i *Installer) Remove(files []string) error {
 	for _, file := range files {
 		contents, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}
 
-		var component Component
-		if err := yaml.Unmarshal(contents, &component); err != nil {
+		var config Config
+		if err := yaml.Unmarshal(contents, &config); err != nil {
 			return err
 		}
 
-		output.WriteInfo("Removing component %s from Cluster", component.Type)
-		switch component.Type {
-		case "secops-chaos-ai":
-			return c.uninstallSecOpsChaosAI(&component)
-		default:
-			return fmt.Errorf("Unknown component %s", component.Type)
+		output.WriteInfo("Removing component %s from Cluster", config.Type)
+		component := registry[config.Type]
+		if err := component.Uninstall(i.ctx, i.k8s, &config); err != nil {
+			output.WriteFatal("Could not uninstall component: %s", config.Type)
 		}
 	}
 	return nil
 }
 
-func (c *Components) installSecOpsChaosAI(component *Component) error {
-	if component.Image == "" {
-		component.Image = defaultSecopsChaosAIImage
-	}
-
-	err := c.checkForSecret(component)
-	if err != nil {
-		return err
-	}
-
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: component.Type,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32(1),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": component.Type,
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": component.Type,
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            component.Type,
-							Image:           component.Image,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: 8080,
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name: "OPENAI_KEY",
-									ValueFrom: &corev1.EnvVarSource{
-										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: component.Type,
-											},
-											Key: "OPENAI_KEY",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	_, err = c.k8s.Clientset.AppsV1().Deployments(component.Namespace).Create(c.ctx, deployment, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: component.Type,
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app": component.Type,
-			},
-			Ports: []corev1.ServicePort{
-				{
-					Port:       8080,
-					TargetPort: intstr.FromInt(8080),
-				},
-			},
-		},
-	}
-	_, err = c.k8s.Clientset.CoreV1().Services(component.Namespace).Create(c.ctx, service, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Components) uninstallSecOpsChaosAI(component *Component) error {
-	err := c.k8s.Clientset.AppsV1().Deployments(component.Namespace).Delete(c.ctx, component.Type, metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-
-	err = c.k8s.Clientset.CoreV1().Services(component.Namespace).Delete(c.ctx, component.Type, metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Components) checkNamespaceExists(component *Component) error {
+func (c *Installer) checkNamespaceExists(component *Config) error {
 	_, err := c.k8s.Clientset.CoreV1().Namespaces().Get(c.ctx, component.Namespace, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Could not find namespace: %w", err)
@@ -197,8 +110,8 @@ func (c *Components) checkNamespaceExists(component *Component) error {
 	return nil
 }
 
-func (c *Components) checkForSecret(component *Component) error {
-	_, err := c.k8s.Clientset.CoreV1().Secrets(component.Namespace).Get(c.ctx, component.SecretName, metav1.GetOptions{})
+func checkForSecret(ctx context.Context, client *k8s.Client, component *Config) error {
+	_, err := client.Clientset.CoreV1().Secrets(component.Namespace).Get(ctx, component.SecretName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Could not find secret: %w", err)
 	}

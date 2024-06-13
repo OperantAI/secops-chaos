@@ -14,6 +14,14 @@ var experimentCmd = &cobra.Command{
 	Use:   "experiment",
 	Short: "Interact with experiments",
 	Long:  "Interact with experiments",
+	Run: func(cmd *cobra.Command, args []string) {
+		allExperiments := experiments.ListExperiments()
+		table := output.NewTable([]string{"Type", "Description"})
+		for experimentType, description := range allExperiments {
+			table.AddRow([]string{experimentType, description})
+		}
+		table.Render()
+	},
 }
 
 // runCmd represents the run command
