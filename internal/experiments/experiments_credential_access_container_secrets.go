@@ -23,22 +23,22 @@ type ContainerSecretsExperimentConfig struct {
 }
 
 type ContainerSecrets struct {
-	ConfigMapCheck bool                  `yaml:"config_map_check"`
-	PodEnvCheck    bool                  `yaml:"pod_env_check"`
+	ConfigMapCheck bool                  `yaml:"configMapCheck"`
+	PodEnvCheck    bool                  `yaml:"podEnvCheck"`
 	Env            []ContainerSecretsEnv `yaml:"env"`
 }
 
 type ContainerSecretsEnv struct {
-	EnvKey   string `yaml:"env_key"`
-	EnvValue string `yaml:"env_value"`
+	EnvKey   string `yaml:"envKey"`
+	EnvValue string `yaml:"envValue"`
 }
 
 func (p *ContainerSecretsExperimentConfig) Type() string {
-	return "credential_access_container_secrets"
+	return "credential-access-container-secrets"
 }
 
 func (p *ContainerSecretsExperimentConfig) Description() string {
-	return "This experiment attempts to add secrets to a config map and within a container's environment variables"
+	return "Add secrets to a config map and within a container's environment variables"
 }
 
 func (p *ContainerSecretsExperimentConfig) Technique() string {

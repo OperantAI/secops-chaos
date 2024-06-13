@@ -37,11 +37,11 @@ type ExecuteAPIPayload struct {
 	Method           string            `yaml:"method"`
 	Headers          map[string]string `yaml:"headers"`
 	Payload          string            `yaml:"payload"`
-	ExpectedResponse string            `yaml:"expected_response"`
+	ExpectedResponse string            `yaml:"expectedResponse"`
 }
 
 type ExecuteAPIResult struct {
-	ExperimentName string    `json:"experiment_name"`
+	ExperimentName string    `json:"experimentName"`
 	Description    string    `json:"description"`
 	Timestamp      time.Time `json:"timestamp"`
 	Status         int       `json:"status"`

@@ -7,6 +7,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	ltable "github.com/charmbracelet/lipgloss/table"
+	"github.com/mattn/go-runewidth"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v2"
 )
 
@@ -61,19 +63,47 @@ func (t *table) AddRow(row []string) {
 
 // Render renders the table, printing it to stdout
 func (t *table) Render() {
+	physicalWidth, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		fmt.Println("Error getting terminal size:", err)
+		return
+	}
+
+	// Calculate max width for each column
+	columnCount := len(t.headers)
+	columnWidth := physicalWidth / columnCount
+
+	// Truncate cells if they exceed the column width
+	truncatedRows := make([][]string, len(t.rows))
+	for i, row := range t.rows {
+		truncatedRows[i] = make([]string, columnCount)
+		for j, cell := range row {
+			truncatedRows[i][j] = truncateString(cell, columnWidth)
+		}
+	}
+
+	// Create the table using lipgloss
 	tbl := ltable.New().
 		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case col == 1:
-				return lipgloss.NewStyle().Width(40)
+			if col == 1 {
+				return lipgloss.NewStyle().MaxWidth(physicalWidth)
 			}
 			return lipgloss.Style{}
 		}).
 		Border(lipgloss.NormalBorder()).
 		Headers(t.headers...).
-		Rows(t.rows...)
+		Rows(truncatedRows...)
 
 	fmt.Println(tbl)
+}
+
+// truncateString ensures the string fits within the given width, appending "..." if necessary
+func truncateString(str string, width int) string {
+	if runewidth.StringWidth(str) <= width {
+		return str
+	}
+	truncated := runewidth.Truncate(str, width-3, "...")
+	return truncated
 }
 
 // WriteJSON writes the given output as pretty printed JSON to stdout

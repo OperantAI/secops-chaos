@@ -1,15 +1,15 @@
 experiments:
   - metadata:
       name: remote-execute-api
-      type: remote_execute_api
+      type: remote-execute-api
       namespace: default
     parameters:
-      image: alconen/egress_server
-      image_parameters: 
+      image: alconen/egress-server
+      imageParameters: 
         - "URLS=https://google.com,https://linkedin.com,https://openai.com"
         - "EXAMPLE=example"
       target:
-        target_port: 4000
+        targetPort: 4000
         path: /experiment/CheckEgress/
-      service_account_name: default
+      serviceAccountName: default
     

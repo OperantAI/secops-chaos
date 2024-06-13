@@ -6,10 +6,10 @@
 experiments:
   - metadata:
       name: my-experiment # A meaningful name for your experiment
-      type: prvileged_container # The type of experiment, see table below for a list of valid types
+      type: prvileged-container # The type of experiment, see table below for a list of valid types
       namespace: my-namespace # What namespace to apply the experiment to
     parameters: # Parameters holds the settings for your experiment, tweak them to suit your needs.
-        host_pid: true 
+        hostPid: true 
 ```
 
 
@@ -17,17 +17,17 @@ experiments:
 
 | Type                                                  | Description                                                                                                                | Framework |
 |-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|-----------|
-| [privileged_container](run_privileged_container.yaml) | This experiment attempts to run a privileged container in a namespace                                                      | MITRE     |
-| [host_path_mount](host_path_volume.yaml)              | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
-| [cluster_admin_binding](cluster_admin_binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
-| [remote_execute_api](remote_execute_api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
-| [execute_api](execute_api.yaml)                       | This experiment attempts to call a service with a payload                                                                  | MITRE     |
+| [privileged-container](run-privileged-container.yaml) | This experiment attempts to run a privileged container in a namespace                                                      | MITRE     |
+| [host-path-mount](host-path-mount.yaml)               | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
+| [cluster-admin-binding](cluster-admin-binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
+| [remote-execute-api](remote-execute-api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
+| [execute-api](execute-api.yaml)                       | This experiment attempts to call a service with a payload                                                                  | MITRE     |
 
 ## Implementing a new Experiment
 
 Each experiment within `secops-chaos` adheres to a shared interface, this allows for a common set of functionality to be used across all experiments.
 
-When implementing a new experiment you should create a new file starting with `experiment_` within the [internal/experiments](https://github.com/OperantAI/secops-chaos/blob/main/internal/experiments/) directory, and implement the `Experiment` interface.
+When implementing a new experiment you should create a new file starting with `experiment-` within the [internal/experiments](https://github.com/OperantAI/secops-chaos/blob/main/internal/experiments/) directory, and implement the `Experiment` interface.
 
 ```go
 type Experiment interface {
@@ -83,7 +83,7 @@ type HostPathMountExperimentConfig struct {
 }
 
 type HostPathMount struct {
-	HostPath HostPath `yaml:"host_path"`
+	HostPath HostPath `yaml:"hostPath"`
 }
 
 type HostPath struct {
@@ -92,7 +92,7 @@ type HostPath struct {
 
 func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.client, experimentConfig *ExperimentConfig) error {
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
+	yamlObj, - := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return err

@@ -23,7 +23,7 @@ type HostPathMountExperimentConfig struct {
 }
 
 type HostPathMount struct {
-	HostPath HostPath `yaml:"host_path"`
+	HostPath HostPath `yaml:"hostPath"`
 }
 
 type HostPath struct {
@@ -31,11 +31,11 @@ type HostPath struct {
 }
 
 func (p *HostPathMountExperimentConfig) Type() string {
-	return "host_path_mount"
+	return "host-path-mount"
 }
 
 func (p *HostPathMountExperimentConfig) Description() string {
-	return "This experiment attempts to mount a sensitive host filesystem path into a container"
+	return "Mount a sensitive host filesystem path into a container"
 }
 
 func (p *HostPathMountExperimentConfig) Technique() string {
