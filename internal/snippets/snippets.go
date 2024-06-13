@@ -7,7 +7,7 @@ import (
 	embedExperiments "github.com/operantai/secops-chaos/experiments"
 )
 
-func RetrieveComponentTemplate(component string) ([]byte, error) {
+func GetComponentTemplate(component string) ([]byte, error) {
 	content, err := embedComponents.EmbeddedComponents.ReadFile(fmt.Sprintf("%s.yaml", component))
 	if err != nil {
 		return nil, err
@@ -15,7 +15,7 @@ func RetrieveComponentTemplate(component string) ([]byte, error) {
 	return content, nil
 }
 
-func RetrieveExperimentTemplate(experiment string) ([]byte, error) {
+func GetExperimentTemplate(experiment string) ([]byte, error) {
 	content, err := embedExperiments.EmbeddedExperiments.ReadFile(fmt.Sprintf("%s.yaml", experiment))
 	if err != nil {
 		return nil, err

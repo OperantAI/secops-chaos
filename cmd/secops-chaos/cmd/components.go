@@ -28,6 +28,7 @@ var componentCmd = &cobra.Command{
 	},
 }
 
+// installComponentCmd installs a given component YAML
 var installComponentCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install a component",
@@ -45,6 +46,7 @@ var installComponentCmd = &cobra.Command{
 	},
 }
 
+// snippetComponentCmd outputs a template of a given component
 var snippetComponentCmd = &cobra.Command{
 	Use:   "snippet",
 	Short: "Print a template of a component out to stdout",
@@ -53,9 +55,9 @@ var snippetComponentCmd = &cobra.Command{
 		if err != nil {
 			output.WriteError("Error reading component flag: %v", err)
 		}
-		snippet, err := snippets.RetrieveComponentTemplate(component)
+		snippet, err := snippets.GetComponentTemplate(component)
 		if err != nil {
-			output.WriteFatal("Error retrieving component template: %s", err)
+			output.WriteFatal("Error retrieving component template: %v", err)
 		}
 		fmt.Println(string(snippet))
 	},

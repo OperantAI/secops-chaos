@@ -4,8 +4,11 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/operantai/secops-chaos/internal/experiments"
 	"github.com/operantai/secops-chaos/internal/output"
+	"github.com/operantai/secops-chaos/internal/snippets"
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +42,23 @@ var runCmd = &cobra.Command{
 		ctx := cmd.Context()
 		er := experiments.NewRunner(ctx, files)
 		er.Run()
+	},
+}
+
+// snippetExperimentCmd outputs a template of a given experiment type
+var snippetExperimentCmd = &cobra.Command{
+	Use:   "snippet",
+	Short: "Print a template of an experiment type to stdout",
+	Run: func(cmd *cobra.Command, args []string) {
+		experiment, err := cmd.Flags().GetString("experiment")
+		if err != nil {
+			output.WriteError("Error reading experiment flag: %v", err)
+		}
+		snippet, err := snippets.GetExperimentTemplate(experiment)
+		if err != nil {
+			output.WriteFatal("Error retrieving experiment template: %v", err)
+		}
+		fmt.Println(string(snippet))
 	},
 }
 
@@ -87,6 +107,7 @@ func init() {
 	experimentCmd.AddCommand(runCmd)
 	experimentCmd.AddCommand(verifyCmd)
 	experimentCmd.AddCommand(cleanCmd)
+	experimentCmd.AddCommand(snippetExperimentCmd)
 
 	// Define the path of the experiment file to run
 	runCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
@@ -97,6 +118,9 @@ func init() {
 
 	cleanCmd.Flags().StringSliceP("file", "f", []string{}, "Experiment file(s) to run")
 	_ = cleanCmd.MarkFlagRequired("file")
+
+	snippetExperimentCmd.Flags().StringP("experiment", "e", "", "Experiment to generate a template for")
+	_ = snippetExperimentCmd.MarkFlagRequired("experiment")
 
 	// Output the results in JSON format
 	verifyCmd.Flags().StringP("output", "o", "", "Output results in the provided format (json|yaml)")
