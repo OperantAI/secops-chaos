@@ -28,7 +28,7 @@ jobs:
     - name: Test
       run: make test
 
-  secops-chaos-cli:
+  release-secops-chaos-cli:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: go-build-test
