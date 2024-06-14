@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
 	"gopkg.in/yaml.v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
 	"time"
@@ -63,7 +65,7 @@ func (p *LLMDataLeakageExperiment) Type() string {
 }
 
 func (p *LLMDataLeakageExperiment) Description() string {
-	return "This experiment checks whether the LLM AI Model is leaking any sensitive data such as PII data or secrets and keys in its response"
+	return "Check whether the LLM AI Model is leaking any sensitive data such as PII data or secrets and keys in its response"
 }
 func (p *LLMDataLeakageExperiment) Technique() string {
 	return categories.MITREATLAS.Exfiltration.LLMDataLeakage.Technique
@@ -75,6 +77,8 @@ func (p *LLMDataLeakageExperiment) Framework() string {
 	return string(categories.MitreAtlas)
 }
 
+const SecopsChaosAi = "secops-chaos-ai"
+
 func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	var config LLMDataLeakageExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
@@ -82,12 +86,16 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 	if err != nil {
 		return err
 	}
+	_, err = client.Clientset.AppsV1().Deployments(config.Metadata.Namespace).Get(ctx, SecopsChaosAi, metav1.GetOptions{})
+	if err != nil {
+		return errors.New("Error in checking for Secops Chaos AI component to run AI experiments. Is it deployed? Deploy with secops-chaos component install command.")
+	}
 	pf := client.NewPortForwarder(ctx)
 	if err != nil {
 		return err
 	}
 	defer pf.Stop()
-	forwardedPort, err := pf.Forward(config.Metadata.Namespace, "app=secops-chaos-ai", 8000)
+	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", SecopsChaosAi), 8000)
 	if err != nil {
 		return err
 	}
