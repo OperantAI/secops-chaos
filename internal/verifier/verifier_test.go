@@ -131,7 +131,7 @@ func TestOutcome_GetResultString(t *testing.T) {
 					"test_name2": Fail,
 				},
 			},
-			expected: "test_name1: success\ntest_name2: fail\n",
+			expected: "test_name1: success\ntest_name2: fail\n OR test_name2: fail\ntest_name1: success\n",
 		},
 	}
 
