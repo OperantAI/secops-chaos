@@ -59,7 +59,7 @@ type ExecuteAIAPIResult struct {
 }
 
 func (p *LLMDataLeakageExperiment) Type() string {
-	return "llm_data_leakage"
+	return "llm-data-leakage"
 }
 
 func (p *LLMDataLeakageExperiment) Description() string {
