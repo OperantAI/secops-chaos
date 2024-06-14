@@ -17,9 +17,8 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type HostPathMountExperimentConfig struct {
-	Metadata   ExperimentMetadata `yaml:"metadata"`
-	Parameters HostPathMount      `yaml:"parameters"`
+type HostPathMountExperiment struct {
+	*ExperimentConfig
 }
 
 type HostPathMount struct {
@@ -30,28 +29,28 @@ type HostPath struct {
 	Path string `yaml:"path"`
 }
 
-func (p *HostPathMountExperimentConfig) Type() string {
+func (p *HostPathMountExperiment) Type() string {
 	return "host-path-mount"
 }
 
-func (p *HostPathMountExperimentConfig) Description() string {
+func (p *HostPathMountExperiment) Description() string {
 	return "Mount a sensitive host filesystem path into a container"
 }
 
-func (p *HostPathMountExperimentConfig) Technique() string {
+func (p *HostPathMountExperiment) Technique() string {
 	return categories.MITRE.PrivilegeEscalation.HostPathMount.Technique
 }
 
-func (p *HostPathMountExperimentConfig) Tactic() string {
+func (p *HostPathMountExperiment) Tactic() string {
 	return categories.MITRE.PrivilegeEscalation.HostPathMount.Tactic
 }
 
-func (p *HostPathMountExperimentConfig) Framework() string {
+func (p *HostPathMountExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var hostPathMountExperimentConfig HostPathMountExperimentConfig
+func (p *HostPathMountExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var hostPathMountExperimentConfig HostPathMountExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
@@ -119,8 +118,8 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.Cli
 	return err
 }
 
-func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var hostPathMountExperimentConfig HostPathMountExperimentConfig
+func (p *HostPathMountExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var hostPathMountExperimentConfig HostPathMountExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
@@ -164,8 +163,8 @@ func checkVolumes(pod corev1.Pod, volumePath string) bool {
 	return false
 }
 
-func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var hostPathMountExperimentConfig HostPathMountExperimentConfig
+func (p *HostPathMountExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var hostPathMountExperimentConfig HostPathMountExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {

@@ -16,9 +16,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ExecuteAPIExperimentConfig struct {
-	Metadata   ExperimentMetadata `yaml:"metadata"`
-	Parameters ExecuteAPI         `yaml:"parameters"`
+type ExecuteAPIExperiment struct {
+	*ExperimentConfig
 }
 
 type ExecuteAPI struct {
@@ -48,25 +47,25 @@ type ExecuteAPIResult struct {
 	Response       string    `json:"response"`
 }
 
-func (p *ExecuteAPIExperimentConfig) Type() string {
+func (p *ExecuteAPIExperiment) Type() string {
 	return "execute_api"
 }
 
-func (p *ExecuteAPIExperimentConfig) Description() string {
+func (p *ExecuteAPIExperiment) Description() string {
 	return "This experiment port forwards to a service running in Kubernetes and issues API calls to that service"
 }
-func (p *ExecuteAPIExperimentConfig) Technique() string {
+func (p *ExecuteAPIExperiment) Technique() string {
 	return categories.MITRE.Execution.ApplicationExploit.Technique
 }
-func (p *ExecuteAPIExperimentConfig) Tactic() string {
+func (p *ExecuteAPIExperiment) Tactic() string {
 	return categories.MITRE.Execution.ApplicationExploit.Tactic
 }
-func (p *ExecuteAPIExperimentConfig) Framework() string {
+func (p *ExecuteAPIExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config ExecuteAPIExperimentConfig
+func (p *ExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config ExecuteAPIExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -144,8 +143,8 @@ func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client
 	return nil
 }
 
-func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config ExecuteAPIExperimentConfig
+func (p *ExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var config ExecuteAPIExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -190,8 +189,8 @@ func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Cli
 	return v.GetOutcome(), nil
 }
 
-func (p *ExecuteAPIExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config RemoteExecuteAPIExperimentConfig
+func (p *ExecuteAPIExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config RemoteExecuteAPIExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {

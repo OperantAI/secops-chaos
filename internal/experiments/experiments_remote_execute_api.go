@@ -18,9 +18,8 @@ import (
 // The image must be created independently -- the current default is `alconen/egress_server`, which runs a simple web app on port 4000 that checks http connectivity to
 // a few domains ("https://google.com", "https://linkedin.com", "https://openai.com/") and responds with a success based on the success of those calls.
 // The source can be found at cmd/executor-server
-type RemoteExecuteAPIExperimentConfig struct {
-	Metadata   ExperimentMetadata        `yaml:"metadata"`
-	Parameters executor.RemoteExecuteAPI `yaml:"parameters"`
+type RemoteExecuteAPIExperiment struct {
+	*ExperimentConfig
 }
 type Result struct {
 	Name      string      `json:"name"`
@@ -32,25 +31,25 @@ type URLResult struct {
 	Success bool   `json:"success"`
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Type() string {
+func (p *RemoteExecuteAPIExperiment) Type() string {
 	return "remote-execute-api"
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Description() string {
+func (p *RemoteExecuteAPIExperiment) Description() string {
 	return "Runs a deployment based on a configurable image and then verifies based off of API calls to that image"
 }
-func (p *RemoteExecuteAPIExperimentConfig) Technique() string {
+func (p *RemoteExecuteAPIExperiment) Technique() string {
 	return categories.MITRE.Execution.NewContainer.Technique
 }
-func (p *RemoteExecuteAPIExperimentConfig) Tactic() string {
+func (p *RemoteExecuteAPIExperiment) Tactic() string {
 	return categories.MITRE.Execution.NewContainer.Tactic
 }
-func (p *RemoteExecuteAPIExperimentConfig) Framework() string {
+func (p *RemoteExecuteAPIExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config RemoteExecuteAPIExperimentConfig
+func (p *RemoteExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config RemoteExecuteAPIExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -74,8 +73,8 @@ func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.
 	return nil
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config RemoteExecuteAPIExperimentConfig
+func (p *RemoteExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var config RemoteExecuteAPIExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -123,7 +122,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k
 	return v.GetOutcome(), nil
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) retrieveAPIResponse(url string) (*Result, error) {
+func (p *RemoteExecuteAPIExperiment) retrieveAPIResponse(url string) (*Result, error) {
 	var result Result
 	response, err := http.Get(url)
 	if err != nil {
@@ -139,9 +138,9 @@ func (p *RemoteExecuteAPIExperimentConfig) retrieveAPIResponse(url string) (*Res
 	return &result, nil
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *RemoteExecuteAPIExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	clientset := client.Clientset
-	var config RemoteExecuteAPIExperimentConfig
+	var config RemoteExecuteAPIExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {

@@ -18,35 +18,34 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type ClusterAdminBindingExperimentConfig struct {
-	Metadata   ExperimentMetadata  `yaml:"metadata"`
-	Parameters ClusterAdminBinding `yaml:"parameters"`
+type ClusterAdminBindingExperiment struct {
+	*ExperimentConfig
 }
 
 type ClusterAdminBinding struct{}
 
-func (p *ClusterAdminBindingExperimentConfig) Type() string {
+func (p *ClusterAdminBindingExperiment) Type() string {
 	return "cluster-admin-binding"
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Description() string {
+func (p *ClusterAdminBindingExperiment) Description() string {
 	return "Create a container with the cluster-admin role binding attached"
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Technique() string {
+func (p *ClusterAdminBindingExperiment) Technique() string {
 	return categories.MITRE.PrivilegeEscalation.ClusterAdminBinding.Technique
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Tactic() string {
+func (p *ClusterAdminBindingExperiment) Tactic() string {
 	return categories.MITRE.PrivilegeEscalation.ClusterAdminBinding.Tactic
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Framework() string {
+func (p *ClusterAdminBindingExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config ClusterAdminBindingExperimentConfig
+func (p *ClusterAdminBindingExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config ClusterAdminBindingExperiment
 	yamlObj, err := yaml.Marshal(experimentConfig)
 	if err != nil {
 		return err
@@ -141,8 +140,8 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config ClusterAdminBindingExperimentConfig
+func (p *ClusterAdminBindingExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var config ClusterAdminBindingExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -183,8 +182,8 @@ func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client
 	return v.GetOutcome(), nil
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config ClusterAdminBindingExperimentConfig
+func (p *ClusterAdminBindingExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config ClusterAdminBindingExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {

@@ -32,6 +32,8 @@ type ExperimentMetadata struct {
 	Namespace string `yaml:"namespace"`
 	// Type of the experiment
 	Type string `yaml:"type"`
+	// DependsOn is the upstream dependencies of this Experiment
+	DependsOn []string `yaml:"dependsOn"`
 }
 
 type AIAPIPayload struct {

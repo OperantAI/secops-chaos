@@ -17,9 +17,8 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type ContainerSecretsExperimentConfig struct {
-	Metadata   ExperimentMetadata `yaml:"metadata"`
-	Parameters ContainerSecrets   `yaml:"parameters"`
+type ContainerSecretsExperiment struct {
+	*ExperimentConfig
 }
 
 type ContainerSecrets struct {
@@ -33,28 +32,28 @@ type ContainerSecretsEnv struct {
 	EnvValue string `yaml:"envValue"`
 }
 
-func (p *ContainerSecretsExperimentConfig) Type() string {
+func (p *ContainerSecretsExperiment) Type() string {
 	return "credential-access-container-secrets"
 }
 
-func (p *ContainerSecretsExperimentConfig) Description() string {
+func (p *ContainerSecretsExperiment) Description() string {
 	return "Add secrets to a config map and within a container's environment variables"
 }
 
-func (p *ContainerSecretsExperimentConfig) Technique() string {
+func (p *ContainerSecretsExperiment) Technique() string {
 	return categories.MITRE.Credentials.ApplicationCredentialsInConfigurationFiles.Technique
 }
 
-func (p *ContainerSecretsExperimentConfig) Tactic() string {
+func (p *ContainerSecretsExperiment) Tactic() string {
 	return categories.MITRE.Credentials.ApplicationCredentialsInConfigurationFiles.Tactic
 }
 
-func (p *ContainerSecretsExperimentConfig) Framework() string {
+func (p *ContainerSecretsExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
+func (p *ContainerSecretsExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var containerSecretsExperimentConfig ContainerSecretsExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
 	if err != nil {
@@ -132,8 +131,8 @@ func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.
 	return nil
 }
 
-func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
+func (p *ContainerSecretsExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var containerSecretsExperimentConfig ContainerSecretsExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
 	if err != nil {
@@ -215,8 +214,8 @@ func checkConfigMapForSecrets(configMap corev1.ConfigMap, envTest []ContainerSec
 	return false
 }
 
-func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
+func (p *ContainerSecretsExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var containerSecretsExperimentConfig ContainerSecretsExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
 	if err != nil {

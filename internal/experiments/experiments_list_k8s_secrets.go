@@ -20,9 +20,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ListK8sSecretsConfig struct {
-	Metadata   ExperimentMetadata   `yaml:"metadata"`
-	Parameters K8sSecretsParameters `yaml:"parameters"`
+type ListK8sSecrets struct {
+	*ExperimentConfig
 }
 
 type K8sSecretsParameters struct {
@@ -30,28 +29,28 @@ type K8sSecretsParameters struct {
 	Namespaces     []string                  `yaml:"namespaces"`
 }
 
-func (p *ListK8sSecretsConfig) Type() string {
+func (p *ListK8sSecrets) Type() string {
 	return "list-kubernetes-secrets"
 }
 
-func (p *ListK8sSecretsConfig) Description() string {
+func (p *ListK8sSecrets) Description() string {
 	return "List Kubernetes secrets in namespaces from within a container"
 }
 
-func (p *ListK8sSecretsConfig) Technique() string {
+func (p *ListK8sSecrets) Technique() string {
 	return categories.MITRE.Credentials.ListK8sSecrets.Technique
 }
 
-func (p *ListK8sSecretsConfig) Tactic() string {
+func (p *ListK8sSecrets) Tactic() string {
 	return categories.MITRE.Credentials.ListK8sSecrets.Tactic
 }
 
-func (p *ListK8sSecretsConfig) Framework() string {
+func (p *ListK8sSecrets) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ListK8sSecretsConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config ListK8sSecretsConfig
+func (p *ListK8sSecrets) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config ListK8sSecrets
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -130,8 +129,8 @@ func (p *ListK8sSecretsConfig) Run(ctx context.Context, client *k8s.Client, expe
 
 }
 
-func (p *ListK8sSecretsConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config ListK8sSecretsConfig
+func (p *ListK8sSecrets) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var config ListK8sSecrets
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -180,9 +179,9 @@ func (p *ListK8sSecretsConfig) Verify(ctx context.Context, client *k8s.Client, e
 	return v.GetOutcome(), nil
 }
 
-func (p *ListK8sSecretsConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ListK8sSecrets) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
 	clientset := client.Clientset
-	var config ListK8sSecretsConfig
+	var config ListK8sSecrets
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {

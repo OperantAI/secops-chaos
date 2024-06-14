@@ -40,7 +40,10 @@ var runCmd = &cobra.Command{
 
 		// Run the experiment
 		ctx := cmd.Context()
-		er := experiments.NewRunner(ctx, files)
+		er := experiments.NewRunner(ctx)
+		if err := er.ParseExperiments(files); err != nil {
+			output.WriteFatal("Error parsing experiment files: %s", err)
+		}
 		er.Run()
 	},
 }
@@ -79,7 +82,10 @@ var verifyCmd = &cobra.Command{
 
 		// Run the verifiers
 		ctx := cmd.Context()
-		er := experiments.NewRunner(ctx, files)
+		er := experiments.NewRunner(ctx)
+		if err := er.ParseExperiments(files); err != nil {
+			output.WriteFatal("Error parsing experiment files: %s", err)
+		}
 		er.RunVerifiers(outputFormat)
 	},
 }
@@ -97,7 +103,10 @@ var cleanCmd = &cobra.Command{
 
 		// Create a new experiment runner and clean up
 		ctx := cmd.Context()
-		er := experiments.NewRunner(ctx, files)
+		er := experiments.NewRunner(ctx)
+		if err := er.ParseExperiments(files); err != nil {
+			output.WriteFatal("Error parsing experiment files: %s", err)
+		}
 		er.Cleanup()
 	},
 }

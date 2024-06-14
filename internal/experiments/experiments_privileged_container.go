@@ -19,9 +19,8 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type PrivilegedContainerExperimentConfig struct {
-	Metadata   ExperimentMetadata  `yaml:"metadata"`
-	Parameters PrivilegedContainer `yaml:"parameters"`
+type PrivilegedContainerExperiment struct {
+	*ExperimentConfig
 }
 
 // PrivilegedContainer is an experiment that creates a deployment with a privileged container
@@ -34,28 +33,36 @@ type PrivilegedContainer struct {
 	RunAsRoot   bool     `yaml:"runAsRoot"`
 }
 
-func (p *PrivilegedContainerExperimentConfig) Type() string {
+func (p *PrivilegedContainerExperiment) Name() string {
+	return p.Metadata.Name
+}
+
+func (p *PrivilegedContainerExperiment) Type() string {
 	return "privileged-container"
 }
 
-func (p *PrivilegedContainerExperimentConfig) Description() string {
+func (p *PrivilegedContainerExperiment) Description() string {
 	return "Run a privileged container in a namespace"
 }
 
-func (p *PrivilegedContainerExperimentConfig) Technique() string {
+func (p *PrivilegedContainerExperiment) Technique() string {
 	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Technique
 }
 
-func (p *PrivilegedContainerExperimentConfig) Tactic() string {
+func (p *PrivilegedContainerExperiment) Tactic() string {
 	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Tactic
 }
 
-func (p *PrivilegedContainerExperimentConfig) Framework() string {
+func (p *PrivilegedContainerExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config PrivilegedContainerExperimentConfig
+func (p *PrivilegedContainerExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
+
+func (p *PrivilegedContainerExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config PrivilegedContainerExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -128,8 +135,8 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config PrivilegedContainerExperimentConfig
+func (p *PrivilegedContainerExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var config PrivilegedContainerExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -196,8 +203,8 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	return verifier.GetOutcome(), nil
 }
 
-func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config PrivilegedContainerExperimentConfig
+func (p *PrivilegedContainerExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config PrivilegedContainerExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
