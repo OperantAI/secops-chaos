@@ -1,7 +1,10 @@
 package experiments
 
 import (
+	"context"
 	"fmt"
+	"github.com/operantai/secops-chaos/internal/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,4 +74,11 @@ func removeTempFilesForExperiment(experimentType, experiment string) error {
 
 	}
 	return nil
+}
+
+const SecopsChaosAi = "secops-chaos-ai"
+
+func isSecopsChaosAIComponentPresent(ctx context.Context, client *k8s.Client, namespace string) bool {
+	_, err := client.Clientset.AppsV1().Deployments(namespace).Get(ctx, SecopsChaosAi, metav1.GetOptions{})
+	return err == nil
 }
