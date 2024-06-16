@@ -79,6 +79,20 @@ func ExperimentFactory(config *ExperimentConfig) (Experiment, error) {
 			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
+	case "llm-data-leakage":
+		exp := &LLMDataLeakageExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
+		if err != nil {
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
+		}
+		return exp, nil
+	case "llm-data-poisoining-experiment":
+		exp := &LLMDataPoisoningExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
+		if err != nil {
+			return nil, fmt.Errorf("Error decoding parameters for experiment: %s", config.Metadata.Name)
+		}
+		return exp, nil
 	default:
 		return nil, fmt.Errorf("Uknown experiment type: %s", config.Metadata.Type)
 	}

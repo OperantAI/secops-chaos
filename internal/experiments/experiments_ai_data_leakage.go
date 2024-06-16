@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/operantai/secops-chaos/internal/categories"
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
+	"github.com/operantai/secops-chaos/internal/verifier"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type LLMDataLeakageExperiment struct {
@@ -22,6 +23,45 @@ type LLMDataLeakageExperiment struct {
 
 type LLMDataLeakage struct {
 	Apis []ExecuteAIAPI `yaml:"apis"`
+}
+
+type AIAPIPayload struct {
+	Model                string   `json:"model" yaml:"model"`
+	AIApi                string   `json:"ai_api" yaml:"ai_api"`
+	SystemPrompt         string   `json:"system_prompt" yaml:"system_prompt"`
+	Prompt               string   `json:"prompt" yaml:"prompt"`
+	VerifyPromptChecks   []string `json:"verify_prompt_checks" yaml:"verify_prompt_checks"`
+	VerifyResponseChecks []string `json:"verify_response_checks" yaml:"verify_response_checks"`
+}
+
+type AIVerifierResult struct {
+	Check      string  `json:"check"`
+	Detected   bool    `json:"detected"`
+	EntityType string  `json:"entityType"`
+	Score      float64 `json:"score"`
+}
+
+type AIAPIResponse struct {
+	VerifiedPromptChecks   []AIVerifierResult `json:"verified_prompt_checks" yaml:"verified_prompt_checks"`
+	VerifiedResponseChecks []AIVerifierResult `json:"verified_response_checks" yaml:"verified_response_checks"`
+}
+
+type ExecuteAIAPI struct {
+	Description      string        `yaml:"description"`
+	Payload          AIAPIPayload  `yaml:"payload"`
+	ExpectedResponse AIAPIResponse `yaml:"expected_response"`
+}
+
+type ExecuteAIAPIResult struct {
+	ExperimentName string        `json:"experiment_name"`
+	Description    string        `json:"description"`
+	Timestamp      time.Time     `json:"timestamp"`
+	Status         int           `json:"status"`
+	Response       AIAPIResponse `json:"response"`
+}
+
+func (p *LLMDataLeakageExperiment) Name() string {
+	return p.Metadata.Name
 }
 
 func (p *LLMDataLeakageExperiment) Type() string {
@@ -41,14 +81,15 @@ func (p *LLMDataLeakageExperiment) Framework() string {
 	return string(categories.MitreAtlas)
 }
 
-func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config LLMDataLeakageExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+func (p *LLMDataLeakageExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
+
+const SecopsChaosAi = "secops-chaos-ai"
+
+func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client) error {
+	_, err := client.Clientset.AppsV1().Deployments(p.Metadata.Namespace).Get(ctx, SecopsChaosAi, metav1.GetOptions{})
 	if err != nil {
-		return err
-	}
-	if !isSecopsChaosAIComponentPresent(ctx, client, config.Metadata.Namespace) {
 		return errors.New("Error in checking for Secops Chaos AI component to run AI experiments. Is it deployed? Deploy with secops-chaos component install command.")
 	}
 	pf := client.NewPortForwarder(ctx)
@@ -56,12 +97,12 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 		return err
 	}
 	defer pf.Stop()
-	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", SecopsChaosAi), 8000)
+	forwardedPort, err := pf.Forward(p.Metadata.Namespace, fmt.Sprintf("app=%s", SecopsChaosAi), 8000)
 	if err != nil {
 		return err
 	}
 	results := make(map[string]ExecuteAIAPIResult)
-	for _, api := range config.Parameters.Apis {
+	for _, api := range p.Parameters.Apis {
 
 		url := url.URL{
 			Scheme: "http",
@@ -97,7 +138,7 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 
 		results[api.Description] = ExecuteAIAPIResult{
 			Description:    api.Description,
-			ExperimentName: config.Metadata.Name,
+			ExperimentName: p.Metadata.Name,
 			Timestamp:      time.Now(),
 			Status:         response.StatusCode,
 			Response:       apiResponse,
@@ -109,7 +150,7 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 		return fmt.Errorf("Failed to marshal experiment results: %w", err)
 	}
 
-	file, err := createTempFile(p.Type(), config.Metadata.Name)
+	file, err := createTempFile(p.Type(), p.Metadata.Name)
 	if err != nil {
 		return fmt.Errorf("Unable to create file cache for experiment results %w", err)
 	}
@@ -122,23 +163,16 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 	return nil
 }
 
-func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config LLMDataLeakageExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	v := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 
-	rawResults, err := getTempFileContentsForExperiment(p.Type(), config.Metadata.Name)
+	rawResults, err := getTempFileContentsForExperiment(p.Type(), p.Metadata.Name)
 	if err != nil {
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
@@ -150,7 +184,7 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 			return nil, fmt.Errorf("Could not parse experiment result: %w", err)
 		}
 
-		for _, api := range config.Parameters.Apis {
+		for _, api := range p.Parameters.Apis {
 			result, found := results[api.Description]
 			if !found {
 				continue
@@ -179,15 +213,8 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 	return v.GetOutcome(), nil
 }
 
-func (p *LLMDataLeakageExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config LLMDataLeakageExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
-
-	if err := removeTempFilesForExperiment(p.Type(), config.Metadata.Name); err != nil {
+func (p *LLMDataLeakageExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
+	if err := removeTempFilesForExperiment(p.Type(), p.Metadata.Name); err != nil {
 		return err
 	}
 
