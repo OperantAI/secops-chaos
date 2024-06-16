@@ -45,7 +45,10 @@ type Runner struct {
 	DAG         *dag.DAG
 	Mutex       sync.Mutex
 	Experiments map[string]Experiment
-	Executed    map[string]bool
+	// ExperimentStatus map[string]DAGStatus
+	ExperimentStatus sync.Map
+	WaitGroup        *sync.WaitGroup
+	Cond             *sync.Cond
 }
 
 // NewRunner returns a new Runner
@@ -63,7 +66,9 @@ func NewRunner(ctx context.Context) *Runner {
 		},
 		DAG:         dag.NewDAG(),
 		Experiments: make(map[string]Experiment),
-		Executed:    make(map[string]bool),
+		WaitGroup:   new(sync.WaitGroup),
+		Cond:        sync.NewCond(&sync.Mutex{}),
+		// ExperimentStatus: make(map[string]DAGStatus),
 	}
 }
 
@@ -94,6 +99,7 @@ func (r *Runner) AddExperiment(experiment Experiment) error {
 	// Add the experiment
 	r.Experiments[experiment.Name()] = experiment
 	r.DAG.AddVertex(experiment.Name())
+	r.ExperimentStatus.Store(experiment.Name(), PendingStatus)
 
 	// Add any dependencies the experiment has
 	for _, dependency := range experiment.DependsOn() {
@@ -106,10 +112,10 @@ func (r *Runner) AddExperiment(experiment Experiment) error {
 
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
-	var wg sync.WaitGroup
-	visitor := &experimentVisitor{r, &wg}
+	visitor := &experimentVisitor{r}
 	r.DAG.OrderedWalk(visitor)
-	wg.Wait()
+	r.WaitGroup.Wait()
+	output.WriteInfo("All experiments completed")
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments

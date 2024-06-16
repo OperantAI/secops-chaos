@@ -1,17 +1,20 @@
 package experiments
 
 import (
-	"log"
-	"sync"
-	"time"
-
 	"github.com/heimdalr/dag"
 	"github.com/operantai/secops-chaos/internal/output"
 )
 
+type DAGStatus int64
+
+const (
+	PendingStatus   DAGStatus = 0
+	RunningStatus   DAGStatus = 1
+	CompletedStatus DAGStatus = 2
+)
+
 type experimentVisitor struct {
 	*Runner
-	*sync.WaitGroup
 }
 
 func (v *experimentVisitor) Visit(vertex dag.Vertexer) {
@@ -24,45 +27,53 @@ func (v *experimentVisitor) Visit(vertex dag.Vertexer) {
 	}
 	dependencies := experiment.DependsOn()
 	for _, depName := range dependencies {
-		if !v.waitForDependency(depName) {
+		if !v.waitForDependency(experiment.Name(), depName) {
 			output.WriteError("Timeout waiting for dependency %s of experiment %s to finish", depName, experimentName)
 			return
 		}
 	}
-
 	v.runExperiment(experimentName)
 }
 
-func (v *experimentVisitor) waitForDependency(depName string) bool {
-	v.Runner.Mutex.Lock()
-	defer v.Runner.Mutex.Unlock()
+func (v *experimentVisitor) waitForDependency(experiment, depName string) bool {
+	output.WriteInfo("Experiment %s waiting for dependency to finish: %s", experiment, depName)
+	// for {
+	// 	depStatus, ok := v.ExperimentStatus.Load(depName)
+	// 	if !ok {
+	// 		output.WriteError("Experiment %s dependency %s not found", experiment, depName)
+	// 	}
+	// 	if depStatus == CompletedStatus {
+	// 		return true
+	// 	}
 
-	for !v.Executed[depName] {
-		v.Runner.Mutex.Unlock()
-		time.Sleep(100 * time.Millisecond)
-		v.Runner.Mutex.Lock()
-
-		select {
-		case <-v.Runner.ctx.Done():
-			return false
-		default:
+	// 	select {
+	// 	case <-time.After(100 * time.Millisecond):
+	// 	case <-v.Runner.ctx.Done():
+	// 		return false
+	// 	}
+	// }
+	v.Runner.Cond.L.Lock()
+	defer v.Runner.Cond.L.Unlock()
+	for {
+		if depStatus, ok := v.ExperimentStatus.Load(depName); ok && depStatus == CompletedStatus {
+			return true
 		}
+		v.Runner.Cond.Wait()
 	}
-
-	return true
 }
 
 func (v *experimentVisitor) runExperiment(id string) {
-	v.Add(1)
+	v.Runner.WaitGroup.Add(1)
 	go func() {
 		output.WriteInfo("Running experiment: %s", id)
-		defer v.Done()
+		defer v.Runner.WaitGroup.Done()
+		v.ExperimentStatus.Store(id, RunningStatus)
 		err := v.Runner.Experiments[id].Run(v.Runner.ctx, v.Runner.Client)
 		if err != nil {
-			log.Fatalf("Error running experiment %s: %v", id, err)
+			output.WriteError("Error running experiment %s: %s", id, err)
 		}
-		v.Runner.Mutex.Lock()
-		defer v.Runner.Mutex.Unlock()
-		v.Executed[id] = true
+		v.ExperimentStatus.Store(id, CompletedStatus)
+		output.WriteInfo("Experiment completed: %s", id)
+		v.Runner.Cond.Broadcast()
 	}()
 }
