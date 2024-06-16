@@ -10,7 +10,6 @@ import (
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,15 +17,20 @@ import (
 )
 
 type HostPathMountExperiment struct {
-	*ExperimentConfig
+	Metadata   ExperimentMetadata
+	Parameters HostPathMountParameters
 }
 
-type HostPathMount struct {
+type HostPathMountParameters struct {
 	HostPath HostPath `yaml:"hostPath"`
 }
 
 type HostPath struct {
 	Path string `yaml:"path"`
+}
+
+func (p *HostPathMountExperiment) Name() string {
+	return p.Name()
 }
 
 func (p *HostPathMountExperiment) Type() string {
@@ -49,37 +53,34 @@ func (p *HostPathMountExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *HostPathMountExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var hostPathMountExperimentConfig HostPathMountExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
-	if err != nil {
-		return err
-	}
-	params := hostPathMountExperimentConfig.Parameters
+func (p *HostPathMountExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
+
+func (p *HostPathMountExperiment) Run(ctx context.Context, client *k8s.Client) error {
 	clientset := client.Clientset
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hostPathMountExperimentConfig.Metadata.Name,
+			Name: p.Metadata.Name,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: pointer.Int32(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": hostPathMountExperimentConfig.Metadata.Name,
+					"app": p.Metadata.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"experiment": hostPathMountExperimentConfig.Metadata.Name,
-						"app":        hostPathMountExperimentConfig.Metadata.Name,
+						"experiment": p.Metadata.Name,
+						"app":        p.Metadata.Name,
 					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            hostPathMountExperimentConfig.Metadata.Name,
+							Name:            p.Metadata.Name,
 							Image:           "alpine:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
@@ -105,7 +106,7 @@ func (p *HostPathMountExperiment) Run(ctx context.Context, client *k8s.Client, e
 							Name: "hostpath-volume",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
-									Path: params.HostPath.Path,
+									Path: p.Parameters.HostPath.Path,
 								},
 							},
 						},
@@ -114,35 +115,28 @@ func (p *HostPathMountExperiment) Run(ctx context.Context, client *k8s.Client, e
 			},
 		},
 	}
-	_, err = clientset.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	_, err := clientset.AppsV1().Deployments(p.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
-func (p *HostPathMountExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var hostPathMountExperimentConfig HostPathMountExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
-	if err != nil {
-		return nil, err
-	}
-	params := hostPathMountExperimentConfig.Parameters
+func (p *HostPathMountExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	v := verifier.New(
-		hostPathMountExperimentConfig.Metadata.Name,
-		hostPathMountExperimentConfig.Description(),
-		hostPathMountExperimentConfig.Framework(),
-		hostPathMountExperimentConfig.Tactic(),
-		hostPathMountExperimentConfig.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 	listOptions := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s", hostPathMountExperimentConfig.Metadata.Name),
+		LabelSelector: fmt.Sprintf("app=%s", p.Metadata.Name),
 	}
 	clientset := client.Clientset
-	pods, err := clientset.CoreV1().Pods(hostPathMountExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
+	pods, err := clientset.CoreV1().Pods(p.Metadata.Namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}
 	if len(pods.Items) == 1 {
-		if checkVolumes(pods.Items[0], params.HostPath.Path) {
+		if checkVolumes(pods.Items[0], p.Parameters.HostPath.Path) {
 			v.Success("")
 		} else {
 			v.Fail("")
@@ -163,13 +157,7 @@ func checkVolumes(pod corev1.Pod, volumePath string) bool {
 	return false
 }
 
-func (p *HostPathMountExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var hostPathMountExperimentConfig HostPathMountExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
-	if err != nil {
-		return err
-	}
+func (p *HostPathMountExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
 	clientset := client.Clientset
-	return clientset.AppsV1().Deployments(hostPathMountExperimentConfig.Metadata.Namespace).Delete(ctx, hostPathMountExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+	return clientset.AppsV1().Deployments(p.Metadata.Namespace).Delete(ctx, p.Metadata.Name, metav1.DeleteOptions{})
 }

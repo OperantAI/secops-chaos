@@ -17,16 +17,20 @@ import (
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 )
 
 type ListK8sSecrets struct {
-	*ExperimentConfig
+	Metadata   ExperimentMetadata
+	Parameters K8sSecretsParameters
 }
 
 type K8sSecretsParameters struct {
 	ExecutorConfig executor.RemoteExecuteAPI `yaml:"executorConfig"`
 	Namespaces     []string                  `yaml:"namespaces"`
+}
+
+func (p *ListK8sSecrets) Name() string {
+	return p.Metadata.Name
 }
 
 func (p *ListK8sSecrets) Type() string {
@@ -49,25 +53,22 @@ func (p *ListK8sSecrets) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ListK8sSecrets) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config ListK8sSecrets
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (p *ListK8sSecrets) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
 
+func (p *ListK8sSecrets) Run(ctx context.Context, client *k8s.Client) error {
 	executorConfig := executor.NewExecutorConfig(
-		config.Metadata.Name,
-		config.Metadata.Namespace,
-		config.Parameters.ExecutorConfig.Image,
-		config.Parameters.ExecutorConfig.ImageParameters,
-		config.Parameters.ExecutorConfig.ServiceAccountName,
-		config.Parameters.ExecutorConfig.Target.Port,
+		p.Metadata.Name,
+		p.Metadata.Namespace,
+		p.Parameters.ExecutorConfig.Image,
+		p.Parameters.ExecutorConfig.ImageParameters,
+		p.Parameters.ExecutorConfig.ServiceAccountName,
+		p.Parameters.ExecutorConfig.Target.Port,
 	)
 	clusterrole := &v1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: config.Metadata.Name,
+			Name: p.Metadata.Name,
 		},
 		Rules: []v1.PolicyRule{
 			{
@@ -86,33 +87,33 @@ func (p *ListK8sSecrets) Run(ctx context.Context, client *k8s.Client, experiment
 	}
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.Parameters.ExecutorConfig.ServiceAccountName,
-			Namespace: config.Metadata.Namespace,
+			Name:      p.Parameters.ExecutorConfig.ServiceAccountName,
+			Namespace: p.Metadata.Namespace,
 		},
 	}
 	clusterRoleBinding := &v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: config.Metadata.Name,
+			Name: p.Metadata.Name,
 		},
 		Subjects: []v1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      config.Parameters.ExecutorConfig.ServiceAccountName,
-				Namespace: config.Metadata.Namespace,
+				Name:      p.Parameters.ExecutorConfig.ServiceAccountName,
+				Namespace: p.Metadata.Namespace,
 				APIGroup:  "",
 			},
 		},
 		RoleRef: v1.RoleRef{
 			Kind:     "ClusterRole",
-			Name:     config.Metadata.Name,
+			Name:     p.Metadata.Name,
 			APIGroup: "rbac.authorization.k8s.io",
 		},
 	}
-	_, err = client.Clientset.RbacV1().ClusterRoles().Create(ctx, clusterrole, metav1.CreateOptions{})
+	_, err := client.Clientset.RbacV1().ClusterRoles().Create(ctx, clusterrole, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
-	_, err = client.Clientset.CoreV1().ServiceAccounts(config.Metadata.Namespace).Create(ctx, serviceAccount, metav1.CreateOptions{})
+	_, err = client.Clientset.CoreV1().ServiceAccounts(p.Metadata.Namespace).Create(ctx, serviceAccount, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -129,37 +130,28 @@ func (p *ListK8sSecrets) Run(ctx context.Context, client *k8s.Client, experiment
 
 }
 
-func (p *ListK8sSecrets) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config ListK8sSecrets
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
+func (p *ListK8sSecrets) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	v := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 
 	pf := client.NewPortForwarder(ctx)
-	if err != nil {
-		return nil, err
-	}
 	defer pf.Stop()
 	forwardedPort, err := pf.Forward(
-		config.Metadata.Namespace,
-		fmt.Sprintf("app=%s", config.Metadata.Name),
-		int(config.Parameters.ExecutorConfig.Target.Port),
+		p.Metadata.Namespace,
+		fmt.Sprintf("app=%s", p.Metadata.Name),
+		int(p.Parameters.ExecutorConfig.Target.Port),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	path := config.Parameters.ExecutorConfig.Target.Path
-	for _, namespace := range config.Parameters.Namespaces {
+	path := p.Parameters.ExecutorConfig.Target.Path
+	for _, namespace := range p.Parameters.Namespaces {
 		requestUrl := url.URL{
 			Scheme: "http",
 			Host:   fmt.Sprintf("%s:%d", pf.Addr(), int32(forwardedPort.Local)),
@@ -179,37 +171,30 @@ func (p *ListK8sSecrets) Verify(ctx context.Context, client *k8s.Client, experim
 	return v.GetOutcome(), nil
 }
 
-func (p *ListK8sSecrets) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ListK8sSecrets) Cleanup(ctx context.Context, client *k8s.Client) error {
 	clientset := client.Clientset
-	var config ListK8sSecrets
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
-
 	executorConfig := executor.NewExecutorConfig(
-		config.Metadata.Name,
-		config.Metadata.Namespace,
-		config.Parameters.ExecutorConfig.Image,
-		config.Parameters.ExecutorConfig.ImageParameters,
-		config.Parameters.ExecutorConfig.ServiceAccountName,
-		config.Parameters.ExecutorConfig.Target.Port,
+		p.Metadata.Name,
+		p.Metadata.Namespace,
+		p.Parameters.ExecutorConfig.Image,
+		p.Parameters.ExecutorConfig.ImageParameters,
+		p.Parameters.ExecutorConfig.ServiceAccountName,
+		p.Parameters.ExecutorConfig.Target.Port,
 	)
 
-	err = executorConfig.Cleanup(ctx, clientset)
+	err := executorConfig.Cleanup(ctx, clientset)
 	if err != nil {
 		return err
 	}
-	err = client.Clientset.RbacV1().ClusterRoleBindings().Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	err = client.Clientset.RbacV1().ClusterRoleBindings().Delete(ctx, p.Metadata.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	err = client.Clientset.RbacV1().ClusterRoles().Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	err = client.Clientset.RbacV1().ClusterRoles().Delete(ctx, p.Metadata.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	err = client.Clientset.CoreV1().ServiceAccounts(config.Metadata.Namespace).Delete(ctx, config.Parameters.ExecutorConfig.ServiceAccountName, metav1.DeleteOptions{})
+	err = client.Clientset.CoreV1().ServiceAccounts(p.Metadata.Namespace).Delete(ctx, p.Parameters.ExecutorConfig.ServiceAccountName, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}

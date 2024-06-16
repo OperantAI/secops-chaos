@@ -13,14 +13,14 @@ import (
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 )
 
 type ExecuteAPIExperiment struct {
-	*ExperimentConfig
+	Metadata   ExperimentMetadata
+	Parameters ExecuteAPIParameters
 }
 
-type ExecuteAPI struct {
+type ExecuteAPIParameters struct {
 	Targets []ExecuteAPITargets `yaml:"targets"`
 }
 
@@ -47,6 +47,10 @@ type ExecuteAPIResult struct {
 	Response       string    `json:"response"`
 }
 
+func (p *ExecuteAPIExperiment) Name() string {
+	return p.Metadata.Name
+}
+
 func (p *ExecuteAPIExperiment) Type() string {
 	return "execute_api"
 }
@@ -54,31 +58,28 @@ func (p *ExecuteAPIExperiment) Type() string {
 func (p *ExecuteAPIExperiment) Description() string {
 	return "This experiment port forwards to a service running in Kubernetes and issues API calls to that service"
 }
+
 func (p *ExecuteAPIExperiment) Technique() string {
 	return categories.MITRE.Execution.ApplicationExploit.Technique
 }
+
 func (p *ExecuteAPIExperiment) Tactic() string {
 	return categories.MITRE.Execution.ApplicationExploit.Tactic
 }
+
 func (p *ExecuteAPIExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config ExecuteAPIExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (p *ExecuteAPIExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
 
-	for _, target := range config.Parameters.Targets {
+func (p *ExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client) error {
+	for _, target := range p.Parameters.Targets {
 		pf := client.NewPortForwarder(ctx)
-		if err != nil {
-			return err
-		}
 		defer pf.Stop()
-		forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", target.Target), target.Port)
+		forwardedPort, err := pf.Forward(p.Metadata.Namespace, fmt.Sprintf("app=%s", target.Target), target.Port)
 		if err != nil {
 			return err
 		}
@@ -117,7 +118,7 @@ func (p *ExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, expe
 
 			results[payload.Description] = ExecuteAPIResult{
 				Description:    payload.Description,
-				ExperimentName: config.Metadata.Name,
+				ExperimentName: p.Metadata.Name,
 				Timestamp:      time.Now(),
 				Status:         response.StatusCode,
 				Response:       string(responseBody),
@@ -129,7 +130,7 @@ func (p *ExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, expe
 			return fmt.Errorf("Failed to marshal experiment results: %w", err)
 		}
 
-		file, err := createTempFile(p.Type(), config.Metadata.Name)
+		file, err := createTempFile(p.Type(), p.Metadata.Name)
 		if err != nil {
 			return fmt.Errorf("Unable to create file cache for experiment results %w", err)
 		}
@@ -143,23 +144,16 @@ func (p *ExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, expe
 	return nil
 }
 
-func (p *ExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config ExecuteAPIExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *ExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	v := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 
-	rawResults, err := getTempFileContentsForExperiment(p.Type(), config.Metadata.Name)
+	rawResults, err := getTempFileContentsForExperiment(p.Type(), p.Metadata.Name)
 	if err != nil {
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
@@ -171,7 +165,7 @@ func (p *ExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client, e
 			return nil, fmt.Errorf("Could not parse experiment result: %w", err)
 		}
 
-		for _, target := range config.Parameters.Targets {
+		for _, target := range p.Parameters.Targets {
 			for _, payload := range target.Payloads {
 				result, found := results[payload.Description]
 				if !found {
@@ -189,15 +183,8 @@ func (p *ExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client, e
 	return v.GetOutcome(), nil
 }
 
-func (p *ExecuteAPIExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config RemoteExecuteAPIExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
-
-	if err := removeTempFilesForExperiment(p.Type(), config.Metadata.Name); err != nil {
+func (p *ExecuteAPIExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
+	if err := removeTempFilesForExperiment(p.Type(), p.Metadata.Name); err != nil {
 		return err
 	}
 

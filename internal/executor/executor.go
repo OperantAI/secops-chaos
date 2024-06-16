@@ -38,6 +38,16 @@ type Target struct {
 	Path string `yaml:"path"`
 }
 
+type Result struct {
+	Name      string      `json:"name"`
+	URLResult []URLResult `json:"url_result"`
+}
+
+type URLResult struct {
+	URL     string `json:"url"`
+	Success bool   `json:"success"`
+}
+
 // Executor configurations are meant to be used to execute remote commands on a pod in a cluster.
 func NewExecutorConfig(name, namespace, image string, imageParameters []string, serviceAccountName string, targetPort int32) *RemoteExecutorConfig {
 	return &RemoteExecutorConfig{

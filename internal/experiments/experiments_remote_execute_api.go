@@ -11,7 +11,6 @@ import (
 	"github.com/operantai/secops-chaos/internal/executor"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 )
 
 // RemoteExecuteAPI is an experiment that uses the remote executor to check a remote output
@@ -19,16 +18,12 @@ import (
 // a few domains ("https://google.com", "https://linkedin.com", "https://openai.com/") and responds with a success based on the success of those calls.
 // The source can be found at cmd/executor-server
 type RemoteExecuteAPIExperiment struct {
-	*ExperimentConfig
-}
-type Result struct {
-	Name      string      `json:"name"`
-	URLResult []URLResult `json:"url_result"`
+	Metadata   ExperimentMetadata
+	Parameters executor.RemoteExecuteAPI
 }
 
-type URLResult struct {
-	URL     string `json:"url"`
-	Success bool   `json:"success"`
+func (p *RemoteExecuteAPIExperiment) Name() string {
+	return p.Metadata.Name
 }
 
 func (p *RemoteExecuteAPIExperiment) Type() string {
@@ -48,24 +43,21 @@ func (p *RemoteExecuteAPIExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *RemoteExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config RemoteExecuteAPIExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (p *RemoteExecuteAPIExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
 
+func (p *RemoteExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client) error {
 	executorConfig := executor.NewExecutorConfig(
-		config.Metadata.Name,
-		config.Metadata.Namespace,
-		config.Parameters.Image,
-		config.Parameters.ImageParameters,
-		config.Parameters.ServiceAccountName,
-		config.Parameters.Target.Port,
+		p.Metadata.Name,
+		p.Metadata.Namespace,
+		p.Parameters.Image,
+		p.Parameters.ImageParameters,
+		p.Parameters.ServiceAccountName,
+		p.Parameters.Target.Port,
 	)
 
-	err = executorConfig.Deploy(ctx, client.Clientset)
+	err := executorConfig.Deploy(ctx, client.Clientset)
 	if err != nil {
 		return err
 	}
@@ -73,25 +65,16 @@ func (p *RemoteExecuteAPIExperiment) Run(ctx context.Context, client *k8s.Client
 	return nil
 }
 
-func (p *RemoteExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config RemoteExecuteAPIExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
+func (p *RemoteExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 
 	pf := client.NewPortForwarder(ctx)
-	if err != nil {
-		return nil, err
-	}
 	defer pf.Stop()
-	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", config.Metadata.Name), int(config.Parameters.Target.Port))
+	forwardedPort, err := pf.Forward(p.Metadata.Namespace, fmt.Sprintf("app=%s", p.Metadata.Name), int(p.Parameters.Target.Port))
 	if err != nil {
 		return nil, err
 	}
 
-	path := config.Parameters.Target.Path
+	path := p.Parameters.Target.Path
 	url := url.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s:%d", pf.Addr(), int32(forwardedPort.Local)),
@@ -99,11 +82,11 @@ func (p *RemoteExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Cli
 	}
 
 	v := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 
 	result, err := p.retrieveAPIResponse(url.String())
@@ -122,8 +105,8 @@ func (p *RemoteExecuteAPIExperiment) Verify(ctx context.Context, client *k8s.Cli
 	return v.GetOutcome(), nil
 }
 
-func (p *RemoteExecuteAPIExperiment) retrieveAPIResponse(url string) (*Result, error) {
-	var result Result
+func (p *RemoteExecuteAPIExperiment) retrieveAPIResponse(url string) (*executor.Result, error) {
+	var result executor.Result
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -138,25 +121,18 @@ func (p *RemoteExecuteAPIExperiment) retrieveAPIResponse(url string) (*Result, e
 	return &result, nil
 }
 
-func (p *RemoteExecuteAPIExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *RemoteExecuteAPIExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
 	clientset := client.Clientset
-	var config RemoteExecuteAPIExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
-
 	executorConfig := executor.NewExecutorConfig(
-		config.Metadata.Name,
-		config.Metadata.Namespace,
-		config.Parameters.Image,
-		config.Parameters.ImageParameters,
-		config.Parameters.ServiceAccountName,
-		config.Parameters.Target.Port,
+		p.Metadata.Name,
+		p.Metadata.Namespace,
+		p.Parameters.Image,
+		p.Parameters.ImageParameters,
+		p.Parameters.ServiceAccountName,
+		p.Parameters.Target.Port,
 	)
 
-	err = executorConfig.Cleanup(ctx, clientset)
+	err := executorConfig.Cleanup(ctx, clientset)
 	if err != nil {
 		return err
 	}

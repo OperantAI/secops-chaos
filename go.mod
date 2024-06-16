@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/heimdalr/dag v1.4.0
 	github.com/mattn/go-runewidth v0.0.15
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/term v0.18.0

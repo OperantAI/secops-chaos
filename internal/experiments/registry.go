@@ -1,6 +1,10 @@
 package experiments
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/mitchellh/mapstructure"
+)
 
 // ExperimentsRegistry is a list of all experiments
 var ExperimentsRegistry = []Experiment{
@@ -27,20 +31,55 @@ func ListExperiments() map[string]string {
 func ExperimentFactory(config *ExperimentConfig) (Experiment, error) {
 	switch config.Metadata.Type {
 	case "host-path-mount":
-		return &HostPathMountExperiment{config}, nil
+		exp := &HostPathMountExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	case "list-kubernetes-secrets":
-		return &ListK8sSecrets{config}, nil
+		exp := &ListK8sSecrets{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	case "remote-execute-api":
-		return &RemoteExecuteAPIExperiment{config}, nil
+		exp := &RemoteExecuteAPIExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	case "execute-api":
-		return &ExecuteAPIExperiment{config}, nil
+		exp := &ExecuteAPIExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	case "credential-access-container-secrets":
-		return &ContainerSecretsExperiment{config}, nil
+		exp := &ContainerSecretsExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	case "cluster-admin-binding":
-		return &ClusterAdminBindingExperiment{config}, nil
+		exp := &ClusterAdminBindingExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	case "privileged-container":
-		return &PrivilegedContainerExperiment{config}, nil
+		exp := &PrivilegedContainerExperiment{Metadata: config.Metadata}
+		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		return exp, nil
 	default:
-		return nil, fmt.Errorf("Uknown experiment type: %w", config.Metadata.Type)
+		return nil, fmt.Errorf("Uknown experiment type: %s", config.Metadata.Type)
 	}
 }
