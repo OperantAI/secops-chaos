@@ -15,39 +15,40 @@ import (
 	"time"
 )
 
-type LLMDataLeakageExperiment struct {
+type LLMDataPoisoningExperiment struct {
 	Metadata   ExperimentMetadata `yaml:"metadata"`
-	Parameters LLMDataLeakage     `yaml:"parameters"`
+	Parameters LLMDataPoison      `yaml:"parameters"`
 }
 
-type LLMDataLeakage struct {
+type LLMDataPoison struct {
 	Apis []ExecuteAIAPI `yaml:"apis"`
 }
 
-func (p *LLMDataLeakageExperiment) Type() string {
-	return "llm-data-leakage"
+func (p *LLMDataPoisoningExperiment) Type() string {
+	return "llm-data-poisoning"
 }
 
-func (p *LLMDataLeakageExperiment) Description() string {
-	return "Check whether the LLM AI Model is leaking any sensitive data such as PII data or secrets and keys in its response"
+func (p *LLMDataPoisoningExperiment) Description() string {
+	return "Check whether data or prompts sent to an AI API for training or fine-tuning includes sensitive data"
 }
-func (p *LLMDataLeakageExperiment) Technique() string {
-	return categories.MITREATLAS.Exfiltration.LLMDataLeakage.Technique
+func (p *LLMDataPoisoningExperiment) Technique() string {
+	return categories.MITREATLAS.Persistence.PoisonTrainingData.Technique
 }
-func (p *LLMDataLeakageExperiment) Tactic() string {
-	return categories.MITREATLAS.Exfiltration.LLMDataLeakage.Tactic
+func (p *LLMDataPoisoningExperiment) Tactic() string {
+	return categories.MITREATLAS.Persistence.PoisonTrainingData.Tactic
 }
-func (p *LLMDataLeakageExperiment) Framework() string {
+func (p *LLMDataPoisoningExperiment) Framework() string {
 	return string(categories.MitreAtlas)
 }
 
-func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config LLMDataLeakageExperiment
+func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
+
 	if !isSecopsChaosAIComponentPresent(ctx, client, config.Metadata.Namespace) {
 		return errors.New("Error in checking for Secops Chaos AI component to run AI experiments. Is it deployed? Deploy with secops-chaos component install command.")
 	}
@@ -122,8 +123,8 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 	return nil
 }
 
-func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config LLMDataLeakageExperiment
+func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
@@ -156,10 +157,10 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 				continue
 			}
 			fail := false
-			if api.ExpectedResponse.VerifiedResponseChecks != nil {
-				for _, responseCheck := range api.ExpectedResponse.VerifiedResponseChecks {
-					if result.Response.VerifiedResponseChecks != nil {
-						for _, resultCheck := range result.Response.VerifiedResponseChecks {
+			if api.ExpectedResponse.VerifiedPromptChecks != nil {
+				for _, responseCheck := range api.ExpectedResponse.VerifiedPromptChecks {
+					if result.Response.VerifiedPromptChecks != nil {
+						for _, resultCheck := range result.Response.VerifiedPromptChecks {
 							if resultCheck.Check == responseCheck.Check {
 								if resultCheck.Detected != responseCheck.Detected {
 									fail = true
@@ -179,8 +180,8 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 	return v.GetOutcome(), nil
 }
 
-func (p *LLMDataLeakageExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config LLMDataLeakageExperiment
+func (p *LLMDataPoisoningExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {

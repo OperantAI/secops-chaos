@@ -1,11 +1,11 @@
 experiments:
   - metadata:
-      name: llm-data-leakage
-      type: llm-data-leakage
+      name: llm-data-poisoning
+      type: llm-data-poisoning
       namespace: default
     parameters:
       apis:
-        - description: Check for PII data leakage in the AI model response
+        - description: Check Data Poisoning in AI prompts or training data
           payload:
             model: gpt-4o
             system_prompt: > 
@@ -16,7 +16,7 @@ experiments:
             verify_response_checks:
             - PII
           expected_response:
-            verified_response_checks:
+            verified_prompt_checks:
               - check: PII
                 detected: false
 
