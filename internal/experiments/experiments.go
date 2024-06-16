@@ -104,25 +104,12 @@ func (r *Runner) AddExperiment(experiment Experiment) error {
 	return nil
 }
 
-type experimentVisitor struct {
-	*Runner
-}
-
-func (v *experimentVisitor) Visit(vertex dag.Vertexer) {
-	id, _ := vertex.Vertex()
-	if !v.Executed[id] {
-		err := v.Experiments[id].Run(v.ctx, v.Client)
-		if err != nil {
-			output.WriteError("Error running experiment: %s", err)
-		}
-		v.Executed[id] = true
-	}
-}
-
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
-	visitor := &experimentVisitor{r}
+	var wg sync.WaitGroup
+	visitor := &experimentVisitor{r, &wg}
 	r.DAG.OrderedWalk(visitor)
+	wg.Wait()
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
@@ -176,7 +163,7 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
 	for _, experiment := range r.Experiments {
-		output.WriteInfo("Cleaning up experiment %s\n", experiment.Name())
+		output.WriteInfo("Cleaning up experiment %s", experiment.Name())
 		if err := experiment.Cleanup(r.ctx, r.Client); err != nil {
 			output.WriteError("Experiment %s cleanup failed: %s", experiment.Name(), err)
 		}

@@ -30,7 +30,7 @@ type HostPath struct {
 }
 
 func (p *HostPathMountExperiment) Name() string {
-	return p.Name()
+	return p.Metadata.Name
 }
 
 func (p *HostPathMountExperiment) Type() string {

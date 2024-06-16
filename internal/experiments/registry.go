@@ -32,51 +32,51 @@ func ExperimentFactory(config *ExperimentConfig) (Experiment, error) {
 	switch config.Metadata.Type {
 	case "host-path-mount":
 		exp := &HostPathMountExperiment{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	case "list-kubernetes-secrets":
 		exp := &ListK8sSecrets{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	case "remote-execute-api":
 		exp := &RemoteExecuteAPIExperiment{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	case "execute-api":
 		exp := &ExecuteAPIExperiment{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	case "credential-access-container-secrets":
 		exp := &ContainerSecretsExperiment{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	case "cluster-admin-binding":
 		exp := &ClusterAdminBindingExperiment{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	case "privileged-container":
 		exp := &PrivilegedContainerExperiment{Metadata: config.Metadata}
-		err := mapstructure.Decode(config.Parameters, exp.Parameters)
+		err := mapstructure.Decode(config.Parameters, &exp.Parameters)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Error decoding parameters for experiment %s", config.Metadata.Name)
 		}
 		return exp, nil
 	default:
