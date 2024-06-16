@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/operantai/secops-chaos/internal/categories"
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/operantai/secops-chaos/internal/categories"
+	"github.com/operantai/secops-chaos/internal/k8s"
+	"github.com/operantai/secops-chaos/internal/verifier"
 )
 
 type LLMDataPoisoningExperiment struct {
@@ -24,6 +24,10 @@ type LLMDataPoison struct {
 	Apis []ExecuteAIAPI `yaml:"apis"`
 }
 
+func (p *LLMDataPoisoningExperiment) Name() string {
+	return p.Metadata.Name
+}
+
 func (p *LLMDataPoisoningExperiment) Type() string {
 	return "llm-data-poisoning"
 }
@@ -31,38 +35,35 @@ func (p *LLMDataPoisoningExperiment) Type() string {
 func (p *LLMDataPoisoningExperiment) Description() string {
 	return "Check whether data or prompts sent to an AI API for training or fine-tuning includes sensitive data"
 }
+
 func (p *LLMDataPoisoningExperiment) Technique() string {
 	return categories.MITREATLAS.Persistence.PoisonTrainingData.Technique
 }
+
 func (p *LLMDataPoisoningExperiment) Tactic() string {
 	return categories.MITREATLAS.Persistence.PoisonTrainingData.Tactic
 }
+
 func (p *LLMDataPoisoningExperiment) Framework() string {
 	return string(categories.MitreAtlas)
 }
 
-func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config LLMDataPoisoningExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (p *LLMDataPoisoningExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
 
-	if !isSecopsChaosAIComponentPresent(ctx, client, config.Metadata.Namespace) {
+func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client) error {
+	if !isSecopsChaosAIComponentPresent(ctx, client, p.Metadata.Namespace) {
 		return errors.New("Error in checking for Secops Chaos AI component to run AI experiments. Is it deployed? Deploy with secops-chaos component install command.")
 	}
 	pf := client.NewPortForwarder(ctx)
-	if err != nil {
-		return err
-	}
 	defer pf.Stop()
-	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", SecopsChaosAi), 8000)
+	forwardedPort, err := pf.Forward(p.Metadata.Namespace, fmt.Sprintf("app=%s", SecopsChaosAi), 8000)
 	if err != nil {
 		return err
 	}
 	results := make(map[string]ExecuteAIAPIResult)
-	for _, api := range config.Parameters.Apis {
+	for _, api := range p.Parameters.Apis {
 
 		url := url.URL{
 			Scheme: "http",
@@ -98,7 +99,7 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client
 
 		results[api.Description] = ExecuteAIAPIResult{
 			Description:    api.Description,
-			ExperimentName: config.Metadata.Name,
+			ExperimentName: p.Metadata.Name,
 			Timestamp:      time.Now(),
 			Status:         response.StatusCode,
 			Response:       apiResponse,
@@ -110,7 +111,7 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client
 		return fmt.Errorf("Failed to marshal experiment results: %w", err)
 	}
 
-	file, err := createTempFile(p.Type(), config.Metadata.Name)
+	file, err := createTempFile(p.Type(), p.Metadata.Name)
 	if err != nil {
 		return fmt.Errorf("Unable to create file cache for experiment results %w", err)
 	}
@@ -123,23 +124,16 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client
 	return nil
 }
 
-func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config LLMDataPoisoningExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	v := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 
-	rawResults, err := getTempFileContentsForExperiment(p.Type(), config.Metadata.Name)
+	rawResults, err := getTempFileContentsForExperiment(p.Type(), p.Metadata.Name)
 	if err != nil {
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
@@ -151,7 +145,7 @@ func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Cli
 			return nil, fmt.Errorf("Could not parse experiment result: %w", err)
 		}
 
-		for _, api := range config.Parameters.Apis {
+		for _, api := range p.Parameters.Apis {
 			result, found := results[api.Description]
 			if !found {
 				continue
@@ -180,15 +174,8 @@ func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Cli
 	return v.GetOutcome(), nil
 }
 
-func (p *LLMDataPoisoningExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config LLMDataPoisoningExperiment
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
-
-	if err := removeTempFilesForExperiment(p.Type(), config.Metadata.Name); err != nil {
+func (p *LLMDataPoisoningExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
+	if err := removeTempFilesForExperiment(p.Type(), p.Metadata.Name); err != nil {
 		return err
 	}
 

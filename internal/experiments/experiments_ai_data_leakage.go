@@ -25,41 +25,6 @@ type LLMDataLeakage struct {
 	Apis []ExecuteAIAPI `yaml:"apis"`
 }
 
-type AIAPIPayload struct {
-	Model                string   `json:"model" yaml:"model"`
-	AIApi                string   `json:"ai_api" yaml:"ai_api"`
-	SystemPrompt         string   `json:"system_prompt" yaml:"system_prompt"`
-	Prompt               string   `json:"prompt" yaml:"prompt"`
-	VerifyPromptChecks   []string `json:"verify_prompt_checks" yaml:"verify_prompt_checks"`
-	VerifyResponseChecks []string `json:"verify_response_checks" yaml:"verify_response_checks"`
-}
-
-type AIVerifierResult struct {
-	Check      string  `json:"check"`
-	Detected   bool    `json:"detected"`
-	EntityType string  `json:"entityType"`
-	Score      float64 `json:"score"`
-}
-
-type AIAPIResponse struct {
-	VerifiedPromptChecks   []AIVerifierResult `json:"verified_prompt_checks" yaml:"verified_prompt_checks"`
-	VerifiedResponseChecks []AIVerifierResult `json:"verified_response_checks" yaml:"verified_response_checks"`
-}
-
-type ExecuteAIAPI struct {
-	Description      string        `yaml:"description"`
-	Payload          AIAPIPayload  `yaml:"payload"`
-	ExpectedResponse AIAPIResponse `yaml:"expected_response"`
-}
-
-type ExecuteAIAPIResult struct {
-	ExperimentName string        `json:"experiment_name"`
-	Description    string        `json:"description"`
-	Timestamp      time.Time     `json:"timestamp"`
-	Status         int           `json:"status"`
-	Response       AIAPIResponse `json:"response"`
-}
-
 func (p *LLMDataLeakageExperiment) Name() string {
 	return p.Metadata.Name
 }
@@ -84,8 +49,6 @@ func (p *LLMDataLeakageExperiment) Framework() string {
 func (p *LLMDataLeakageExperiment) DependsOn() []string {
 	return p.Metadata.DependsOn
 }
-
-const SecopsChaosAi = "secops-chaos-ai"
 
 func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client) error {
 	_, err := client.Clientset.AppsV1().Deployments(p.Metadata.Namespace).Get(ctx, SecopsChaosAi, metav1.GetOptions{})
