@@ -3,6 +3,7 @@ experiments:
       name: host-path-volume
       type: host-path-mount
       namespace: default
+      dependsOn: []
     parameters:
       hostPath:
         path: /proc

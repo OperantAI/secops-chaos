@@ -3,6 +3,7 @@ experiments:
       name: llm-data-leakage
       type: llm-data-leakage
       namespace: default
+      dependsOn: []
     parameters:
       apis:
         - description: Check for PII data leakage in the AI model response
