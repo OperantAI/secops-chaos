@@ -6,13 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/operantai/secops-chaos/internal/executor"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRetrieveAPIResponse(t *testing.T) {
-	testBody := Result{
+	testBody := executor.Result{
 		Name: "CheckEgress",
-		URLResult: []URLResult{
+		URLResult: []executor.URLResult{
 			{
 				URL:     "google.com",
 				Success: true,
@@ -29,7 +30,7 @@ func TestRetrieveAPIResponse(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	config := RemoteExecuteAPIExperimentConfig{}
+	config := RemoteExecuteAPIExperiment{}
 	result, err := config.retrieveAPIResponse(testServer.URL)
 	if err != nil {
 		t.Fatal(err)
