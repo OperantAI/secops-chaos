@@ -15,10 +15,10 @@ experiments:
 
 ## Available Experiments
 
-For a list of available experiments run `secops-chaos experiments`. You can then generate a example template to get started:
+For a list of available experiments run `secops-chaos experiment`. You can then generate a example template to get started:
 
 ```sh
-secops-chaos experiments snippets -e <experiment-type>
+secops-chaos experiment snippet -e <experiment-type>
 ```
 
 ## Implementing a new Experiment
