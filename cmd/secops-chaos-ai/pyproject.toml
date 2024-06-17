@@ -13,6 +13,8 @@ dependencies = [
   "fastapi>=0.110",
   "pydantic==1.10.14",
   "openai==1.30.5",
+  # https://github.com/explosion/spaCy/issues/13528
+  "numpy==1.26.4",
   "uvicorn[standard]>=0.29",
   "presidio-analyzer[transformers]==2.2.354",
   "presidio-anonymizer==2.2.354",
