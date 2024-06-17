@@ -91,6 +91,7 @@ func (r *Runner) Run() {
 		if err := experiment.Run(r.ctx, r.client, e); err != nil {
 			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
+		output.WriteInfo("Finished running experiment %s. Check results using secops-chaos experiment verify command. \n", e.Metadata.Name)
 	}
 }
 

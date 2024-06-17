@@ -51,6 +51,10 @@ type AIVerifierResult struct {
 }
 
 type AIAPIResponse struct {
+	Model                  string             `json:"model" yaml:"model"`
+	AIApi                  string             `json:"ai_api" yaml:"ai_api"`
+	Prompt                 string             `json:"prompt" yaml:"prompt"`
+	APIResponse            string             `json:"api_response" yaml:"api_response"`
 	VerifiedPromptChecks   []AIVerifierResult `json:"verified_prompt_checks" yaml:"verified_prompt_checks"`
 	VerifiedResponseChecks []AIVerifierResult `json:"verified_response_checks" yaml:"verified_response_checks"`
 }

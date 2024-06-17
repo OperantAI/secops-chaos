@@ -76,7 +76,6 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 				return err
 			}
 		}
-		fmt.Println(string(requestBody))
 		req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(requestBody))
 		if err != nil {
 			return err
@@ -118,7 +117,6 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 	if err != nil {
 		return fmt.Errorf("Failed to write experiment results: %w", err)
 	}
-
 	return nil
 }
 
@@ -143,6 +141,7 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
 
+	var aiVerifierOutcome *verifier.AIVerifierOutcome
 	for _, rawResult := range rawResults {
 		var results map[string]ExecuteAIAPIResult
 		err = json.Unmarshal(rawResult, &results)
@@ -159,20 +158,35 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 			if api.ExpectedResponse.VerifiedResponseChecks != nil {
 				for _, responseCheck := range api.ExpectedResponse.VerifiedResponseChecks {
 					if result.Response.VerifiedResponseChecks != nil {
-						for _, resultCheck := range result.Response.VerifiedResponseChecks {
-							if resultCheck.Check == responseCheck.Check {
-								if resultCheck.Detected != responseCheck.Detected {
-									fail = true
-									v.Fail(api.Description)
-								}
+						fail = true
+						v.Fail(api.Description)
+						if aiVerifierOutcome == nil {
+							aiVerifierOutcome = &verifier.AIVerifierOutcome{
+								Model:                  result.Response.Model,
+								AIApi:                  result.Response.AIApi,
+								Prompt:                 result.Response.Prompt,
+								APIResponse:            result.Response.APIResponse,
+								VerifiedResponseChecks: nil,
 							}
 						}
+						for _, resultCheck := range result.Response.VerifiedResponseChecks {
+							if resultCheck.Check == responseCheck.Check {
+								aiVerifierOutcome.VerifiedResponseChecks = append(aiVerifierOutcome.VerifiedResponseChecks, verifier.AIVerifierResult{
+									Check:      resultCheck.Check,
+									Detected:   resultCheck.Detected,
+									Score:      resultCheck.Score,
+									EntityType: resultCheck.EntityType,
+								})
+							}
+						}
+
 					}
 				}
 			}
 			if !fail {
 				v.Success(api.Description)
 			}
+			v.StoreResultOutputs(api.Description, aiVerifierOutcome)
 		}
 	}
 
