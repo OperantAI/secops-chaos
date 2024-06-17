@@ -87,7 +87,7 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 func (r *Runner) Run() {
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
-		output.WriteInfo("Running experiment %s\n", e.Metadata.Name)
+		output.WriteInfo("Running experiment %s", e.Metadata.Name)
 		if err := experiment.Run(r.ctx, r.client, e); err != nil {
 			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
@@ -146,7 +146,7 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
 	for _, e := range r.experimentsConfig {
-		output.WriteInfo("Cleaning up experiment %s\n", e.Metadata.Name)
+		output.WriteInfo("Cleaning up experiment %s", e.Metadata.Name)
 		experiment := r.experiments[e.Metadata.Type]
 		if err := experiment.Cleanup(r.ctx, r.client, e); err != nil {
 			output.WriteError("Experiment %s cleanup failed: %s", e.Metadata.Name, err)
