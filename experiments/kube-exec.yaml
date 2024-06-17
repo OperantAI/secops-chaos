@@ -1,0 +1,11 @@
+experiments:
+  - metadata:
+      name: kube-exec
+      type: kube-exec
+      namespace: default
+    parameters:
+      target:
+        pod: "my-pod"
+        container: "my-container"
+      command: ["cat", "/etc/passwd"]
+      expectedOutputRegex: "root:"

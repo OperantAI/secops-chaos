@@ -11,6 +11,7 @@ var ExperimentsRegistry = []Experiment{
 	&ListK8sSecretsConfig{},
 	&LLMDataLeakageExperiment{},
 	&LLMDataPoisoningExperiment{},
+	&KubeExec{},
 }
 
 func ListExperiments() map[string]string {
