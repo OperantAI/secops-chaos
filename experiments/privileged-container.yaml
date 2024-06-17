@@ -4,6 +4,8 @@ experiments:
       type: privileged-container
       namespace: default
     parameters:
+      image: "alpine:latest"
+      command: [ "sh", "-c", "while true; do :; done"]
       privileged: true
       hostPid: true
       hostNetwork: true

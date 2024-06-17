@@ -29,12 +29,12 @@ type RemoteExecutor struct {
 }
 type RemoteExecuteAPI struct {
 	Image              string   `yaml:"image"`
-	ImageParameters    []string `yaml:"image_parameters"`
-	ServiceAccountName string   `yaml:"service_account_name"`
+	ImageParameters    []string `yaml:"imageParameters"`
+	ServiceAccountName string   `yaml:"serviceAccountName"`
 	Target             Target   `yaml:"target"`
 }
 type Target struct {
-	Port int32  `yaml:"target_port"`
+	Port int32  `yaml:"targetPort"`
 	Path string `yaml:"path"`
 }
 

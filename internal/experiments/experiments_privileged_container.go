@@ -26,10 +26,12 @@ type PrivilegedContainerExperimentConfig struct {
 
 // PrivilegedContainer is an experiment that creates a deployment with a privileged container
 type PrivilegedContainer struct {
-	Privileged  bool `yaml:"privileged"`
-	HostPid     bool `yaml:"host_pid"`
-	HostNetwork bool `yaml:"host_network"`
-	RunAsRoot   bool `yaml:"run_as_root"`
+	Image       string   `yaml:"image"`
+	Command     []string `yaml:"command"`
+	Privileged  bool     `yaml:"privileged"`
+	HostPid     bool     `yaml:"hostPid"`
+	HostNetwork bool     `yaml:"hostNetwork"`
+	RunAsRoot   bool     `yaml:"runAsRoot"`
 }
 
 func (p *PrivilegedContainerExperimentConfig) Type() string {
@@ -58,6 +60,15 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
+	}
+
+	if config.Parameters.Image == "" && len(config.Parameters.Command) == 0 {
+		config.Parameters.Image = "alpine:latest"
+		config.Parameters.Command = []string{
+			"sh",
+			"-c",
+			"while true; do :; done",
+		}
 	}
 
 	clientset := client.Clientset
@@ -89,13 +100,9 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 					Containers: []corev1.Container{
 						{
 							Name:            config.Metadata.Name,
-							Image:           "alpine:latest",
+							Image:           config.Parameters.Image,
 							ImagePullPolicy: corev1.PullAlways,
-							Command: []string{
-								"sh",
-								"-c",
-								"while true; do :; done",
-							},
+							Command:         config.Parameters.Command,
 						},
 					},
 				},
