@@ -50,8 +50,7 @@ The design of **secops-chaos** can be broken down into three concepts:
 - **Verifiers** - Verifiers look at the results of an Experiment and reports their outcome.
 - **Components** - Components are additional applications installed on a K8s cluster to enable and enhance experiment functionality.
 
-
-The secops-chaos CLI mirrors this, and exposes `run`, `verify` and `component` commands.
+The secops-chaos CLI mirrors this, and exposes `experiment`, and `component` commands.
 
 #### Experiments & Verifiers
 
@@ -59,7 +58,11 @@ To start, you need to run an experiment.
 
 Each experiment is defined by a `experiment` file which allows you to tweak your experiment parameters to suit your scenarios.
 
-For a full list of experiments you can run, see the [experiments][experiments-dir-url] directory.
+For a full list of experiments available, you can run `secops-chaos experiment` and you'll get a list and a short description of their capabilities.
+
+To get you started you can then run `secops-chaos experiment snippet -e <experiment-name>` and it'll output a template you can start from.
+
+Once you're happy with your template you can run it:
 
 ``` sh
 $ secops-chaos experiment run -f experiments/host_path_volume.yaml
@@ -84,7 +87,7 @@ $ secops-chaos component install -f components/secops-chaos-ai.yaml
 $ secops-chaos component uninstall -f components/secops-chaos-ai.yaml
 ```
 
-Experiments that need a component will warn you, and allow for installation during runtime.
+Experiments that need a component will warn you if it's not deployed when trying to run it.
 
 ## Contributing
 
