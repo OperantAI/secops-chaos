@@ -24,6 +24,7 @@ func TestVerifier_Success(t *testing.T) {
 				Result: map[string]string{
 					"experiment_name": Success,
 				},
+				ResultOutputs: make(map[string][]interface{}),
 			},
 		},
 		{
@@ -38,6 +39,7 @@ func TestVerifier_Success(t *testing.T) {
 				Result: map[string]string{
 					"test_name": Success,
 				},
+				ResultOutputs: make(map[string][]interface{}),
 			},
 		},
 	}
@@ -69,6 +71,7 @@ func TestVerifier_Fail(t *testing.T) {
 				Result: map[string]string{
 					"experiment_name": Fail,
 				},
+				ResultOutputs: make(map[string][]interface{}),
 			},
 		},
 		{
@@ -83,6 +86,7 @@ func TestVerifier_Fail(t *testing.T) {
 				Result: map[string]string{
 					"test_name": Fail,
 				},
+				ResultOutputs: make(map[string][]interface{}),
 			},
 		},
 	}
@@ -131,7 +135,7 @@ func TestOutcome_GetResultString(t *testing.T) {
 					"test_name2": Fail,
 				},
 			},
-			expected: "test_name1: success\ntest_name2: fail\n",
+			expected: "test_name1: success\ntest_name2: fail\n OR test_name2: fail\ntest_name1: success\n",
 		},
 	}
 

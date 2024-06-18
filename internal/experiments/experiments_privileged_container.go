@@ -26,18 +26,26 @@ type PrivilegedContainerExperimentConfig struct {
 
 // PrivilegedContainer is an experiment that creates a deployment with a privileged container
 type PrivilegedContainer struct {
-	Privileged  bool `yaml:"privileged"`
-	HostPid     bool `yaml:"host_pid"`
-	HostNetwork bool `yaml:"host_network"`
-	RunAsRoot   bool `yaml:"run_as_root"`
+	Experiment struct {
+		Image       string   `yaml:"image"`
+		Command     []string `yaml:"command"`
+		Privileged  bool     `yaml:"privileged"`
+		HostPid     bool     `yaml:"hostPid"`
+		HostNetwork bool     `yaml:"hostNetwork"`
+		RunAsRoot   bool     `yaml:"runAsRoot"`
+	} `yaml:"experiment"`
+	Verifier struct {
+		DeployedSuccessfully bool     `yaml:"deployed"`
+		Command              []string `yaml:"command"`
+	} `yaml:"verifier"`
 }
 
 func (p *PrivilegedContainerExperimentConfig) Type() string {
-	return "privileged_container"
+	return "privileged-container"
 }
 
 func (p *PrivilegedContainerExperimentConfig) Description() string {
-	return "This experiment attempts to run a privileged container in a namespace"
+	return "Run a privileged container in a namespace"
 }
 
 func (p *PrivilegedContainerExperimentConfig) Technique() string {
@@ -58,6 +66,16 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
+	}
+
+	params := config.Parameters.Experiment
+	if params.Image == "" && len(params.Command) == 0 {
+		params.Image = "alpine:latest"
+		params.Command = []string{
+			"sh",
+			"-c",
+			"while true; do :; done",
+		}
 	}
 
 	clientset := client.Clientset
@@ -84,18 +102,14 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 					},
 				},
 				Spec: corev1.PodSpec{
-					HostNetwork: config.Parameters.HostNetwork,
-					HostPID:     config.Parameters.HostPid,
+					HostNetwork: params.HostNetwork,
+					HostPID:     params.HostPid,
 					Containers: []corev1.Container{
 						{
 							Name:            config.Metadata.Name,
-							Image:           "alpine:latest",
+							Image:           params.Image,
 							ImagePullPolicy: corev1.PullAlways,
-							Command: []string{
-								"sh",
-								"-c",
-								"while true; do :; done",
-							},
+							Command:         params.Command,
 						},
 					},
 				},
@@ -103,7 +117,6 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 
-	params := config.Parameters
 	container := deployment.Spec.Template.Spec.Containers[0]
 	securityContext := &corev1.SecurityContext{}
 	if params.RunAsRoot {
@@ -144,44 +157,57 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 		config.Technique(),
 	)
 
-	if params.HostPid {
-		verifier.Fail("HostPID")
-		if deployment.Spec.Template.Spec.HostPID {
-			verifier.Success("HostPID")
-		}
-	}
-
-	if params.HostNetwork {
-		verifier.Fail("HostNetwork")
-		if deployment.Spec.Template.Spec.HostNetwork {
-			verifier.Success("HostNetwork")
-		}
-	}
-
 	// Find the container by name, as it may not be the first container in the list due to sidecar injection
-	container, err := k8s.FindContainerByName(deployment.Spec.Template.Spec.Containers, config.Metadata.Name)
+	container, err := client.FindContainerByName(deployment.Spec.Template.Spec.Containers, config.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	if params.RunAsRoot {
-		verifier.Fail("RunAsRoot")
-		if container.SecurityContext != nil {
-			if container.SecurityContext.RunAsUser != nil {
-				if *container.SecurityContext.RunAsUser == 0 {
-					verifier.Success("RunAsRoot")
+	if config.Parameters.Verifier.DeployedSuccessfully {
+		verifier.Success("Deployed")
+		if params.Experiment.HostPid {
+			if !deployment.Spec.Template.Spec.HostPID {
+				verifier.Fail("Deployed")
+			}
+		}
+
+		if params.Experiment.HostNetwork {
+			if !deployment.Spec.Template.Spec.HostNetwork {
+				verifier.Fail("Deployed")
+			}
+		}
+
+		if params.Experiment.RunAsRoot {
+			if container.SecurityContext != nil {
+				if container.SecurityContext.RunAsUser != nil {
+					if *container.SecurityContext.RunAsUser != 0 {
+						verifier.Fail("Deployed")
+					}
+				}
+			}
+		}
+
+		if params.Experiment.Privileged {
+			if container.SecurityContext != nil {
+				if container.SecurityContext.Privileged != nil {
+					if !*container.SecurityContext.Privileged {
+						verifier.Fail("Deployed")
+					}
 				}
 			}
 		}
 	}
 
-	if params.Privileged {
-		verifier.Fail("Privileged")
-		if container.SecurityContext != nil {
-			if container.SecurityContext.Privileged != nil {
-				if *container.SecurityContext.Privileged {
-					verifier.Success("Privileged")
-				}
+	if len(params.Verifier.Command) > 0 {
+		verifier.Success("Command")
+		pods, err := client.GetDeploymentsPods(ctx, config.Metadata.Namespace, deployment)
+		if err != nil {
+			return nil, err
+		}
+		for _, pod := range pods {
+			_, _, err := client.ExecuteRemoteCommand(ctx, config.Metadata.Namespace, pod.Name, container.Name, config.Parameters.Verifier.Command)
+			if err != nil {
+				verifier.Fail("Command")
 			}
 		}
 	}

@@ -7,5 +7,17 @@ var ExperimentsRegistry = []Experiment{
 	&ClusterAdminBindingExperimentConfig{},
 	&ContainerSecretsExperimentConfig{},
 	&RemoteExecuteAPIExperimentConfig{},
+	&ExecuteAPIExperimentConfig{},
 	&ListK8sSecretsConfig{},
+	&LLMDataLeakageExperiment{},
+	&LLMDataPoisoningExperiment{},
+	&KubeExec{},
+}
+
+func ListExperiments() map[string]string {
+	experiments := make(map[string]string)
+	for _, experiment := range ExperimentsRegistry {
+		experiments[experiment.Type()] = experiment.Description()
+	}
+	return experiments
 }

@@ -7,18 +7,23 @@ LD_FLAGS = "-X $(REPO_NAME)/cmd/secops-chaos/cmd.GitCommit=$(GIT_COMMIT) -X $(RE
 
 all: fmt vet test build
 
+.PHONY: build
 build: ## Build binary
 	@go build -o "bin/$(BINARY_NAME)" -ldflags $(LD_FLAGS) cmd/secops-chaos/main.go
 
+.PHONY: fmt
 fmt: ## Run go fmt
 	@go fmt ./...
 
+.PHONY: vet
 vet: ## Run go vet
 	@go vet ./...
 
+.PHONY: lint
 lint: ## Run linter
 	@golangci-lint run
 
+.PHONY: test
 test: ## Run tests
 	@go test -cover -v ./...
 

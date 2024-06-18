@@ -1,0 +1,18 @@
+experiments:
+  - metadata:
+      name: run-privileged-container
+      type: privileged-container
+      namespace: default
+    parameters:
+      experiment:
+        image: "alpine:latest"
+        command: [ "sh", "-c", "while true; do :; done"]
+        privileged: true
+        hostPid: true
+        hostNetwork: true
+        runAsRoot: true
+      verifier:
+        deployed: true
+        command:
+          - cat
+          - "/tmp/malicious-activity-log"

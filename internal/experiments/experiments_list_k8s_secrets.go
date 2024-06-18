@@ -6,12 +6,13 @@ package experiments
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+
 	"github.com/operantai/secops-chaos/internal/executor"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"net/url"
 
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
@@ -25,16 +26,16 @@ type ListK8sSecretsConfig struct {
 }
 
 type K8sSecretsParameters struct {
-	ExecutorConfig executor.RemoteExecuteAPI `yaml:"executor_config"`
+	ExecutorConfig executor.RemoteExecuteAPI `yaml:"executorConfig"`
 	Namespaces     []string                  `yaml:"namespaces"`
 }
 
 func (p *ListK8sSecretsConfig) Type() string {
-	return "list_kubernetes_secrets"
+	return "list-kubernetes-secrets"
 }
 
 func (p *ListK8sSecretsConfig) Description() string {
-	return "This experiment attempts to list Kubernetes secrets in different namespaces from within a container"
+	return "List Kubernetes secrets in namespaces from within a container"
 }
 
 func (p *ListK8sSecretsConfig) Technique() string {
@@ -143,44 +144,26 @@ func (p *ListK8sSecretsConfig) Verify(ctx context.Context, client *k8s.Client, e
 		config.Tactic(),
 		config.Technique(),
 	)
-	executorConfig := executor.NewExecutorConfig(
-		config.Metadata.Name,
-		config.Metadata.Namespace,
-		config.Parameters.ExecutorConfig.Image,
-		config.Parameters.ExecutorConfig.ImageParameters,
-		config.Parameters.ExecutorConfig.ServiceAccountName,
-		config.Parameters.ExecutorConfig.Target.Port,
-	)
 
-	forwarder, err := executorConfig.OpenLocalPort(ctx, client)
+	pf := client.NewPortForwarder(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	go func() {
-		err = forwarder.ForwardPorts()
-		if err != nil {
-			executorConfig.ErrCh <- fmt.Errorf("Local Port Failed to open: %w", err)
-		}
-	}()
-
-	// Waits until local port is ready or open errors
-	select {
-	case <-executorConfig.ReadyCh:
-		break
-	case err := <-executorConfig.ErrCh:
+	defer pf.Stop()
+	forwardedPort, err := pf.Forward(
+		config.Metadata.Namespace,
+		fmt.Sprintf("app=%s", config.Metadata.Name),
+		int(config.Parameters.ExecutorConfig.Target.Port),
+	)
+	if err != nil {
 		return nil, err
 	}
 
 	path := config.Parameters.ExecutorConfig.Target.Path
-	ports, err := forwarder.GetPorts()
-	if err != nil {
-		return nil, err
-	}
 	for _, namespace := range config.Parameters.Namespaces {
 		requestUrl := url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("%s:%d", executorConfig.Addr, int32(ports[0].Local)),
+			Host:   fmt.Sprintf("%s:%d", pf.Addr(), int32(forwardedPort.Local)),
 			Path:   fmt.Sprintf("%s/%s", path, namespace),
 		}
 		response, err := http.Get(requestUrl.String())

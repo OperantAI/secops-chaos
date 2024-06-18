@@ -5,6 +5,7 @@ package experiments
 
 import (
 	"context"
+	"strings"
 
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
@@ -86,15 +87,16 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 func (r *Runner) Run() {
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
-		output.WriteInfo("Running experiment %s\n", e.Metadata.Name)
+		output.WriteInfo("Running experiment %s", e.Metadata.Name)
 		if err := experiment.Run(r.ctx, r.client, e); err != nil {
 			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
+		output.WriteInfo("Finished running experiment %s. Check results using secops-chaos experiment verify command. \n", e.Metadata.Name)
 	}
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
-func (r *Runner) RunVerifiers(writeJSON bool) {
+func (r *Runner) RunVerifiers(outputFormat string) {
 	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
 	outcomes := []*verifier.Outcome{}
 	for _, e := range r.experimentsConfig {
@@ -104,7 +106,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
 		// if JSON flag is set, append to JSON output
-		if writeJSON {
+		if outputFormat != "" {
 			outcomes = append(outcomes, outcome)
 		} else {
 			table.AddRow([]string{
@@ -118,16 +120,24 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 		}
 	}
 
-	// if JSON flag is set, print JSON output
-	if writeJSON {
-		k8sVersion, err := k8s.GetK8sVersion(r.client.Clientset)
+	// if output flag is set, print JSON or YAML output
+	if outputFormat != "" {
+		k8sVersion, err := r.client.GetK8sVersion()
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
-		output.WriteJSON(verifier.JSONOutput{
+		structuredOutput := verifier.StructuredOutput{
 			K8sVersion: k8sVersion.String(),
 			Results:    outcomes,
-		})
+		}
+		switch strings.ToLower(outputFormat) {
+		case "json":
+			output.WriteJSON(structuredOutput)
+		case "yaml":
+			output.WriteYAML(structuredOutput)
+		default:
+			output.WriteError("Unknown output format: %s", outputFormat)
+		}
 		return
 	}
 
@@ -137,7 +147,7 @@ func (r *Runner) RunVerifiers(writeJSON bool) {
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
 	for _, e := range r.experimentsConfig {
-		output.WriteInfo("Cleaning up experiment %s\n", e.Metadata.Name)
+		output.WriteInfo("Cleaning up experiment %s", e.Metadata.Name)
 		experiment := r.experiments[e.Metadata.Type]
 		if err := experiment.Cleanup(r.ctx, r.client, e); err != nil {
 			output.WriteError("Experiment %s cleanup failed: %s", e.Metadata.Name, err)

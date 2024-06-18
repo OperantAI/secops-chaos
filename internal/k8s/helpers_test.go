@@ -49,7 +49,8 @@ func TestFindContainerByName(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := FindContainerByName(test.containers, test.containerName)
+			client := Client{}
+			result, err := client.FindContainerByName(test.containers, test.containerName)
 
 			assert.Equal(t, test.expectedResult, result)
 			assert.Equal(t, test.expectedError, err)

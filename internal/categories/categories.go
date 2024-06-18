@@ -6,7 +6,8 @@ package categories
 type Framework string
 
 const (
-	Mitre Framework = "MITRE"
+	Mitre      Framework = "MITRE"
+	MitreAtlas Framework = "MITRE-ATLAS"
 )
 
 // mitreTactics struct to hold MITRE categories
@@ -21,10 +22,28 @@ type mitreTactics struct {
 	LateralMovement     LateralMovement
 }
 
+type mitreAtlasTactics struct {
+	ResourceDevelopment AMLResourceDevelopment
+	Persistence         AMLPersistence
+	Exfiltration        AMLExfiltration
+}
+
 type mitreEntry struct {
 	CategoryID string
 	Tactic     string
 	Technique  string
+}
+
+type AMLResourceDevelopment struct {
+	PoisonTrainingData mitreEntry
+}
+
+type AMLPersistence struct {
+	PoisonTrainingData mitreEntry
+}
+
+type AMLExfiltration struct {
+	LLMDataLeakage mitreEntry
 }
 
 type InitialAccess struct {
@@ -95,7 +114,8 @@ type LateralMovement struct {
 
 // Exported instances of the categories
 var (
-	MITRE mitreTactics
+	MITRE      mitreTactics
+	MITREATLAS mitreAtlasTactics
 )
 
 func init() {
@@ -158,5 +178,13 @@ func init() {
 			CoreDNSPoisoning:                            mitreEntry{"TA0008", "Lateral Movement", "CoreDNS Poisoning"},
 			ARPPoisoningOrIPSpoofing:                    mitreEntry{"TA0008", "Lateral Movement", "ARP Poisoning Or IP Spoofing"},
 		},
+	}
+
+	MITREATLAS = mitreAtlasTactics{
+		AMLResourceDevelopment{
+			PoisonTrainingData: mitreEntry{"AML.T0020", "Resource Development", "Poison Training Data"},
+		},
+		AMLPersistence{PoisonTrainingData: mitreEntry{"AML.T0020", "Persistence", "Poison Training Data"}},
+		AMLExfiltration{LLMDataLeakage: mitreEntry{"AML.T0057", "Exfiltration", "LLM Data Leakage"}},
 	}
 }
