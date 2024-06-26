@@ -15,13 +15,11 @@ experiments:
 
 ## Available Experiments
 
-| Type                                                  | Description                                                                                                                | Framework |
-|-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|-----------|
-| [privileged-container](run-privileged-container.yaml) | This experiment attempts to run a privileged container in a namespace                                                      | MITRE     |
-| [host-path-mount](host-path-mount.yaml)               | This experiment attempts to mount a sensitive host filesystem path into a container                                        | MITRE     |
-| [cluster-admin-binding](cluster-admin-binding.yaml)   | This experiment attempts to create a container with the cluster-admin role binding attached                                | MITRE     |
-| [remote-execute-api](remote-execute-api.yaml)         | This experiment attempts to create a deployment with a configurable image and verifies based off of API calls to the image | MITRE     |
-| [execute-api](execute-api.yaml)                       | This experiment attempts to call a service with a payload                                                                  | MITRE     |
+For a list of available experiments run `secops-chaos experiment`. You can then generate a example template to get started:
+
+```sh
+secops-chaos experiment snippet -e <experiment-type>
+```
 
 ## Implementing a new Experiment
 

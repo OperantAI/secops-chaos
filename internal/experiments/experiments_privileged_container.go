@@ -24,12 +24,18 @@ type PrivilegedContainerExperiment struct {
 
 // PrivilegedContainer is an experiment that creates a deployment with a privileged container
 type PrivilegedContainer struct {
-	Image       string   `yaml:"image"`
-	Command     []string `yaml:"command"`
-	Privileged  bool     `yaml:"privileged"`
-	HostPid     bool     `yaml:"hostPid"`
-	HostNetwork bool     `yaml:"hostNetwork"`
-	RunAsRoot   bool     `yaml:"runAsRoot"`
+	Experiment struct {
+		Image       string   `yaml:"image"`
+		Command     []string `yaml:"command"`
+		Privileged  bool     `yaml:"privileged"`
+		HostPid     bool     `yaml:"hostPid"`
+		HostNetwork bool     `yaml:"hostNetwork"`
+		RunAsRoot   bool     `yaml:"runAsRoot"`
+	} `yaml:"experiment"`
+	Verifier struct {
+		DeployedSuccessfully bool     `yaml:"deployed"`
+		Command              []string `yaml:"command"`
+	} `yaml:"verifier"`
 }
 
 func (p *PrivilegedContainerExperiment) Name() string {
@@ -142,45 +148,59 @@ func (p *PrivilegedContainerExperiment) Verify(ctx context.Context, client *k8s.
 		p.Technique(),
 	)
 
-	if params.HostPid {
-		verifier.Fail("HostPID")
-		if deployment.Spec.Template.Spec.HostPID {
-			verifier.Success("HostPID")
-		}
-	}
-
-	if params.HostNetwork {
-		verifier.Fail("HostNetwork")
-		if deployment.Spec.Template.Spec.HostNetwork {
-			verifier.Success("HostNetwork")
-		}
-	}
-
 	// Find the container by name, as it may not be the first container in the list due to sidecar injection
 	container, err := k8s.FindContainerByName(deployment.Spec.Template.Spec.Containers, p.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	if params.RunAsRoot {
-		verifier.Fail("RunAsRoot")
-		if container.SecurityContext != nil {
-			if container.SecurityContext.RunAsUser != nil {
-				if *container.SecurityContext.RunAsUser == 0 {
-					verifier.Success("RunAsRoot")
+	if config.Parameters.Verifier.DeployedSuccessfully {
+		verifier.Success("Deployed")
+		if params.Experiment.HostPid {
+			if !deployment.Spec.Template.Spec.HostPID {
+				verifier.Fail("Deployed")
+			}
+		}
+
+		if params.Experiment.HostNetwork {
+			if !deployment.Spec.Template.Spec.HostNetwork {
+				verifier.Fail("Deployed")
+			}
+		}
+
+		if params.Experiment.RunAsRoot {
+			if container.SecurityContext != nil {
+				if container.SecurityContext.RunAsUser != nil {
+					if *container.SecurityContext.RunAsUser != 0 {
+						verifier.Fail("Deployed")
+					}
+				}
+			}
+		}
+
+		if params.Experiment.Privileged {
+			if container.SecurityContext != nil {
+				if container.SecurityContext.Privileged != nil {
+					if !*container.SecurityContext.Privileged {
+						verifier.Fail("Deployed")
+					}
 				}
 			}
 		}
 	}
 
-	if params.Privileged {
-		verifier.Fail("Privileged")
-		if container.SecurityContext != nil {
-			if container.SecurityContext.Privileged != nil {
-				if *container.SecurityContext.Privileged {
-					verifier.Success("Privileged")
-				}
+	if len(params.Verifier.Command) > 0 {
+		verifier.Success("Command")
+		pods, err := client.GetDeploymentsPods(ctx, config.Metadata.Namespace, deployment)
+		if err != nil {
+			return nil, err
+		}
+		for _, pod := range pods {
+			output, _, err := client.ExecuteRemoteCommand(ctx, config.Metadata.Namespace, pod.Name, container.Name, config.Parameters.Verifier.Command)
+			if err != nil {
+				verifier.Fail("Command")
 			}
+			verifier.StoreResultOutputs(config.Metadata.Name, string(output))
 		}
 	}
 

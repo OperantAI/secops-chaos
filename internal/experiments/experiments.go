@@ -173,6 +173,5 @@ func (r *Runner) Cleanup() {
 		if err := experiment.Cleanup(r.ctx, r.Client); err != nil {
 			output.WriteError("Experiment %s cleanup failed: %s", experiment.Name(), err)
 		}
-
 	}
 }

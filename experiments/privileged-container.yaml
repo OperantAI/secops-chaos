@@ -5,9 +5,15 @@ experiments:
       namespace: default
       dependsOn: []
     parameters:
-      image: "alpine:latest"
-      command: [ "sh", "-c", "while true; do :; done"]
-      privileged: true
-      hostPid: true
-      hostNetwork: true
-      runAsRoot: true
+      experiment:
+        image: "alpine:latest"
+        command: [ "sh", "-c", "while true; do :; done"]
+        privileged: true
+        hostPid: true
+        hostNetwork: true
+        runAsRoot: true
+      verifier:
+        deployed: true
+        command:
+          - cat
+          - "/tmp/malicious-activity-log"
