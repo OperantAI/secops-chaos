@@ -10,16 +10,15 @@ import (
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
-	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
-type ContainerSecretsExperimentConfig struct {
-	Metadata   ExperimentMetadata `yaml:"metadata"`
-	Parameters ContainerSecrets   `yaml:"parameters"`
+type ContainerSecretsExperiment struct {
+	Metadata   ExperimentMetadata
+	Parameters ContainerSecrets
 }
 
 type ContainerSecrets struct {
@@ -33,57 +32,59 @@ type ContainerSecretsEnv struct {
 	EnvValue string `yaml:"envValue"`
 }
 
-func (p *ContainerSecretsExperimentConfig) Type() string {
+func (p *ContainerSecretsExperiment) Name() string {
+	return p.Metadata.Name
+}
+
+func (p *ContainerSecretsExperiment) Type() string {
 	return "credential-access-container-secrets"
 }
 
-func (p *ContainerSecretsExperimentConfig) Description() string {
+func (p *ContainerSecretsExperiment) Description() string {
 	return "Add secrets to a config map and within a container's environment variables"
 }
 
-func (p *ContainerSecretsExperimentConfig) Technique() string {
+func (p *ContainerSecretsExperiment) Technique() string {
 	return categories.MITRE.Credentials.ApplicationCredentialsInConfigurationFiles.Technique
 }
 
-func (p *ContainerSecretsExperimentConfig) Tactic() string {
+func (p *ContainerSecretsExperiment) Tactic() string {
 	return categories.MITRE.Credentials.ApplicationCredentialsInConfigurationFiles.Tactic
 }
 
-func (p *ContainerSecretsExperimentConfig) Framework() string {
+func (p *ContainerSecretsExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
-	if err != nil {
-		return err
-	}
-	params := containerSecretsExperimentConfig.Parameters
+func (p *ContainerSecretsExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
+
+func (p *ContainerSecretsExperiment) Run(ctx context.Context, client *k8s.Client) error {
+	params := p.Parameters
 	clientset := client.Clientset
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: containerSecretsExperimentConfig.Metadata.Name,
+			Name: p.Metadata.Name,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: pointer.Int32(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": containerSecretsExperimentConfig.Metadata.Name,
+					"app": p.Metadata.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"experiment": containerSecretsExperimentConfig.Metadata.Name,
-						"app":        containerSecretsExperimentConfig.Metadata.Name,
+						"experiment": p.Metadata.Name,
+						"app":        p.Metadata.Name,
 					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            containerSecretsExperimentConfig.Metadata.Name,
+							Name:            p.Metadata.Name,
 							Image:           "alpine:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
@@ -104,10 +105,10 @@ func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.
 	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: containerSecretsExperimentConfig.Metadata.Name,
+			Name: p.Metadata.Name,
 			Labels: map[string]string{
-				"app":        containerSecretsExperimentConfig.Metadata.Name,
-				"experiment": containerSecretsExperimentConfig.Metadata.Name,
+				"app":        p.Metadata.Name,
+				"experiment": p.Metadata.Name,
 			},
 		},
 	}
@@ -120,39 +121,33 @@ func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.
 		configMap.Data[item.EnvKey] = item.EnvValue
 	}
 	if params.PodEnvCheck {
-		_, err = clientset.AppsV1().Deployments(containerSecretsExperimentConfig.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+		_, err := clientset.AppsV1().Deployments(p.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
 	}
 	if params.ConfigMapCheck {
-		_, err = clientset.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).Create(ctx, configMap, metav1.CreateOptions{})
+		_, err := clientset.CoreV1().ConfigMaps(p.Metadata.Namespace).Create(ctx, configMap, metav1.CreateOptions{})
 		return err
 	}
 	return nil
 }
 
-func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
-	if err != nil {
-		return nil, err
-	}
-	params := containerSecretsExperimentConfig.Parameters
+func (p *ContainerSecretsExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
+	params := p.Parameters
 	clientset := client.Clientset
 	v := verifier.New(
-		containerSecretsExperimentConfig.Metadata.Name,
-		containerSecretsExperimentConfig.Description(),
-		containerSecretsExperimentConfig.Framework(),
-		containerSecretsExperimentConfig.Tactic(),
-		containerSecretsExperimentConfig.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 	listOptions := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s", containerSecretsExperimentConfig.Metadata.Name),
+		LabelSelector: fmt.Sprintf("app=%s", p.Metadata.Name),
 	}
 	if params.PodEnvCheck {
-		pods, err := clientset.CoreV1().Pods(containerSecretsExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
+		pods, err := clientset.CoreV1().Pods(p.Metadata.Namespace).List(ctx, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +161,7 @@ func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k
 		}
 	}
 	if params.ConfigMapCheck {
-		configMaps, err := clientset.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).List(ctx, listOptions)
+		configMaps, err := clientset.CoreV1().ConfigMaps(p.Metadata.Namespace).List(ctx, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -215,24 +210,18 @@ func checkConfigMapForSecrets(configMap corev1.ConfigMap, envTest []ContainerSec
 	return false
 }
 
-func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
-	if err != nil {
-		return err
-	}
-	params := containerSecretsExperimentConfig.Parameters
+func (p *ContainerSecretsExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
+	params := p.Parameters
 	clientset := client.Clientset
 	if params.PodEnvCheck {
-		err = clientset.AppsV1().Deployments(containerSecretsExperimentConfig.Metadata.Namespace).Delete(ctx, containerSecretsExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+		err := clientset.AppsV1().Deployments(p.Metadata.Namespace).Delete(ctx, p.Metadata.Name, metav1.DeleteOptions{})
 
 		if err != nil {
 			return err
 		}
 	}
 	if params.ConfigMapCheck {
-		return clientset.CoreV1().ConfigMaps(containerSecretsExperimentConfig.Metadata.Namespace).Delete(ctx, containerSecretsExperimentConfig.Metadata.Name, metav1.DeleteOptions{})
+		return clientset.CoreV1().ConfigMaps(p.Metadata.Namespace).Delete(ctx, p.Metadata.Name, metav1.DeleteOptions{})
 	}
 	return nil
 }

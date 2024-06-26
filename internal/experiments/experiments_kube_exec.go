@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
@@ -36,6 +34,10 @@ type KubeExecResult struct {
 	Stderr string `json:"stderr"`
 }
 
+func (k *KubeExec) Name() string {
+	return k.Metadata.Name
+}
+
 func (k *KubeExec) Type() string {
 	return "kube-exec"
 }
@@ -56,22 +58,20 @@ func (k *KubeExec) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (k *KubeExec) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config KubeExec
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (k *KubeExec) DependsOn() []string {
+	return k.Metadata.DependsOn
+}
+
+func (k *KubeExec) Run(ctx context.Context, client *k8s.Client) error {
 	out, errOut, err := client.ExecuteRemoteCommand(
 		ctx,
-		config.Metadata.Namespace,
-		config.Parameters.Target.Pod,
-		config.Parameters.Target.Container,
-		config.Parameters.Command,
+		k.Metadata.Namespace,
+		k.Parameters.Target.Pod,
+		k.Parameters.Target.Container,
+		k.Parameters.Command,
 	)
 	if err != nil {
-		return fmt.Errorf("Error running Kubernetes command in %s/%s in namespace %s: %w", config.Parameters.Target.Pod, config.Parameters.Target.Container, config.Metadata.Namespace, err)
+		return fmt.Errorf("Error running Kubernetes command in %s/%s in namespace %s: %w", k.Parameters.Target.Pod, k.Parameters.Target.Container, k.Metadata.Namespace, err)
 	}
 
 	resultJSON, err := json.Marshal(&KubeExecResult{
@@ -82,7 +82,7 @@ func (k *KubeExec) Run(ctx context.Context, client *k8s.Client, experimentConfig
 		return fmt.Errorf("Failed to marshal experiment results: %w", err)
 	}
 
-	file, err := createTempFile(k.Type(), config.Metadata.Name)
+	file, err := createTempFile(k.Type(), k.Metadata.Name)
 	if err != nil {
 		return fmt.Errorf("Unable to create file cache for experiment results %w", err)
 	}
@@ -95,21 +95,15 @@ func (k *KubeExec) Run(ctx context.Context, client *k8s.Client, experimentConfig
 
 }
 
-func (k *KubeExec) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config KubeExec
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
+func (k *KubeExec) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	v := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		k.Metadata.Name,
+		k.Description(),
+		k.Framework(),
+		k.Tactic(),
+		k.Technique(),
 	)
-	rawResults, err := getTempFileContentsForExperiment(k.Type(), config.Metadata.Name)
+	rawResults, err := getTempFileContentsForExperiment(k.Type(), k.Metadata.Name)
 	if err != nil {
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
@@ -120,29 +114,22 @@ func (k *KubeExec) Verify(ctx context.Context, client *k8s.Client, experimentCon
 			return nil, fmt.Errorf("Could not parse experiment result: %w", err)
 		}
 		if len(result.Stderr) > 0 {
-			v.Fail(config.Metadata.Name)
+			v.Fail(k.Metadata.Name)
 			continue
 		}
-		regex := regexp.MustCompile(config.Parameters.ExpectedOutputRegex)
+		regex := regexp.MustCompile(k.Parameters.ExpectedOutputRegex)
 		if regex.MatchString(result.Stdout) {
-			v.Success(config.Metadata.Name)
+			v.Success(k.Metadata.Name)
 			continue
 		}
-		v.Fail(config.Metadata.Name)
+		v.Fail(k.Metadata.Name)
 	}
 
 	return v.GetOutcome(), nil
 }
 
-func (k *KubeExec) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config KubeExec
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
-
-	if err := removeTempFilesForExperiment(k.Type(), config.Metadata.Name); err != nil {
+func (k *KubeExec) Cleanup(ctx context.Context, client *k8s.Client) error {
+	if err := removeTempFilesForExperiment(k.Type(), k.Metadata.Name); err != nil {
 		return err
 	}
 

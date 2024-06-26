@@ -3,6 +3,7 @@ experiments:
       name: run-privileged-container
       type: privileged-container
       namespace: default
+      dependsOn: []
     parameters:
       experiment:
         image: "alpine:latest"

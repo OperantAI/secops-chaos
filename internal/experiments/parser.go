@@ -21,7 +21,7 @@ type ExperimentConfig struct {
 	// Metadata for the experiment
 	Metadata ExperimentMetadata `yaml:"metadata"`
 	// Parameters for the experiment
-	Parameters interface{} `yaml:"parameters"`
+	Parameters map[string]interface{} `yaml:"parameters"`
 }
 
 // ExperimentMetadata is a structure which represents the metadata required for an experiment
@@ -32,6 +32,8 @@ type ExperimentMetadata struct {
 	Namespace string `yaml:"namespace"`
 	// Type of the experiment
 	Type string `yaml:"type"`
+	// DependsOn is the upstream dependencies of this Experiment
+	DependsOn []string `yaml:"dependsOn"`
 }
 
 type AIAPIPayload struct {

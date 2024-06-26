@@ -3,6 +3,7 @@ experiments:
       name: remote-execute-api
       type: remote-execute-api
       namespace: default
+      dependsOn: []
     parameters:
       image: alconen/egress-server
       imageParameters: 

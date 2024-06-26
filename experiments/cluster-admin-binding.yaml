@@ -3,4 +3,5 @@ experiments:
       name: cluster-admin-binding
       type: cluster-admin-binding
       namespace: default
+      dependsOn: []
     parameters: {}

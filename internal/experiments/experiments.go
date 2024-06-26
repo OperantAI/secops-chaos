@@ -6,7 +6,9 @@ package experiments
 import (
 	"context"
 	"strings"
+	"sync"
 
+	"github.com/heimdalr/dag"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/output"
 	"github.com/operantai/secops-chaos/internal/verifier"
@@ -14,6 +16,8 @@ import (
 
 // Experiment is the interface for an experiment
 type Experiment interface {
+	// Name returns the name of the experiment
+	Name() string
 	// Type returns the type of the experiment
 	Type() string
 	// Description describes the experiment in a brief sentence
@@ -24,86 +28,104 @@ type Experiment interface {
 	Tactic() string
 	// Technique returns the attack method
 	Technique() string
+	// DepeondsOn returns the dependencies of the experiment
+	DependsOn() []string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
+	Run(ctx context.Context, client *k8s.Client) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
+	Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
+	Cleanup(ctx context.Context, client *k8s.Client) error
 }
 
 // Runner runs a set of experiments
 type Runner struct {
-	ctx               context.Context
-	client            *k8s.Client
-	experiments       map[string]Experiment
-	experimentsConfig map[string]*ExperimentConfig
+	ctx         context.Context
+	Client      *k8s.Client
+	DAG         *dag.DAG
+	Mutex       sync.Mutex
+	Experiments map[string]Experiment
+	// ExperimentStatus map[string]DAGStatus
+	ExperimentStatus sync.Map
+	WaitGroup        *sync.WaitGroup
+	Cond             *sync.Cond
 }
 
 // NewRunner returns a new Runner
-func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
-	// Create a new Kubernetes client
+func NewRunner(ctx context.Context) *Runner {
 	client, err := k8s.NewClient()
 	if err != nil {
 		output.WriteFatal("Failed to create Kubernetes client: %s", err)
 	}
 
-	experimentMap := make(map[string]Experiment)
-	experimentConfigMap := make(map[string]*ExperimentConfig)
-
-	// Create a map of experiment types to experiments
-	for _, e := range ExperimentsRegistry {
-		experimentMap[e.Type()] = e
+	return &Runner{
+		ctx: ctx,
+		Client: &k8s.Client{
+			Clientset:  client.Clientset,
+			RestConfig: client.RestConfig,
+		},
+		DAG:         dag.NewDAG(),
+		Experiments: make(map[string]Experiment),
+		WaitGroup:   new(sync.WaitGroup),
+		Cond:        sync.NewCond(&sync.Mutex{}),
+		// ExperimentStatus: make(map[string]DAGStatus),
 	}
+}
 
-	// Parse the experiment configs
-	for _, e := range experimentFiles {
-		experimentConfigs, err := parseExperimentConfigs(e)
+// ParseExperiments parses the files to it, and adds them to the Runner
+func (r *Runner) ParseExperiments(files []string) error {
+	for _, f := range files {
+		experimentConfigs, err := parseExperimentConfigs(f)
 		if err != nil {
 			output.WriteFatal("Failed to parse experiment configs: %s", err)
 		}
 
-		for i, eConf := range experimentConfigs {
-			if _, exists := experimentMap[eConf.Metadata.Type]; exists {
-				experimentConfigMap[eConf.Metadata.Name] = &experimentConfigs[i]
-			} else {
-				output.WriteError("Experiment %s does not exist", eConf.Metadata.Type)
+		for _, config := range experimentConfigs {
+			experiment, err := ExperimentFactory(&config)
+			if err != nil {
+				return err
 			}
+			r.AddExperiment(experiment)
 		}
 	}
+	return nil
+}
 
-	return &Runner{
-		ctx: ctx,
-		client: &k8s.Client{
-			Clientset:  client.Clientset,
-			RestConfig: client.RestConfig,
-		},
-		experiments:       experimentMap,
-		experimentsConfig: experimentConfigMap,
+// AddExperiment adds a experiment to the Runner
+func (r *Runner) AddExperiment(experiment Experiment) error {
+	r.Mutex.Lock()
+	defer r.Mutex.Unlock()
+
+	// Add the experiment
+	r.Experiments[experiment.Name()] = experiment
+	r.DAG.AddVertex(experiment.Name())
+	r.ExperimentStatus.Store(experiment.Name(), PendingStatus)
+
+	// Add any dependencies the experiment has
+	for _, dependency := range experiment.DependsOn() {
+		if err := r.DAG.AddEdge(dependency, experiment.Name()); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Run runs all experiments in the Runner
 func (r *Runner) Run() {
-	for _, e := range r.experimentsConfig {
-		experiment := r.experiments[e.Metadata.Type]
-		output.WriteInfo("Running experiment %s", e.Metadata.Name)
-		if err := experiment.Run(r.ctx, r.client, e); err != nil {
-			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
-		}
-		output.WriteInfo("Finished running experiment %s. Check results using secops-chaos experiment verify command. \n", e.Metadata.Name)
-	}
+	visitor := &experimentVisitor{r}
+	r.DAG.OrderedWalk(visitor)
+	r.WaitGroup.Wait()
+	output.WriteInfo("All experiments completed")
 }
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(outputFormat string) {
 	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
 	outcomes := []*verifier.Outcome{}
-	for _, e := range r.experimentsConfig {
-		experiment := r.experiments[e.Metadata.Type]
-		outcome, err := experiment.Verify(r.ctx, r.client, e)
+	for _, experiment := range r.Experiments {
+		outcome, err := experiment.Verify(r.ctx, r.Client)
 		if err != nil {
-			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
+			output.WriteFatal("Verifier %s failed: %s", experiment.Name(), err)
 		}
 		// if JSON flag is set, append to JSON output
 		if outputFormat != "" {
@@ -122,7 +144,7 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 
 	// if output flag is set, print JSON or YAML output
 	if outputFormat != "" {
-		k8sVersion, err := r.client.GetK8sVersion()
+		k8sVersion, err := r.Client.GetK8sVersion()
 		if err != nil {
 			output.WriteError("Failed to get Kubernetes version: %s", err)
 		}
@@ -146,12 +168,10 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 
 // Cleanup cleans up all experiments in the Runner
 func (r *Runner) Cleanup() {
-	for _, e := range r.experimentsConfig {
-		output.WriteInfo("Cleaning up experiment %s", e.Metadata.Name)
-		experiment := r.experiments[e.Metadata.Type]
-		if err := experiment.Cleanup(r.ctx, r.client, e); err != nil {
-			output.WriteError("Experiment %s cleanup failed: %s", e.Metadata.Name, err)
+	for _, experiment := range r.Experiments {
+		output.WriteInfo("Cleaning up experiment %s", experiment.Name())
+		if err := experiment.Cleanup(r.ctx, r.Client); err != nil {
+			output.WriteError("Experiment %s cleanup failed: %s", experiment.Name(), err)
 		}
-
 	}
 }

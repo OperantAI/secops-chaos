@@ -6,8 +6,6 @@ package experiments
 import (
 	"context"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/operantai/secops-chaos/internal/categories"
 	"github.com/operantai/secops-chaos/internal/k8s"
 	"github.com/operantai/secops-chaos/internal/verifier"
@@ -19,9 +17,9 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type PrivilegedContainerExperimentConfig struct {
-	Metadata   ExperimentMetadata  `yaml:"metadata"`
-	Parameters PrivilegedContainer `yaml:"parameters"`
+type PrivilegedContainerExperiment struct {
+	Metadata   ExperimentMetadata
+	Parameters PrivilegedContainer
 }
 
 // PrivilegedContainer is an experiment that creates a deployment with a privileged container
@@ -40,76 +38,75 @@ type PrivilegedContainer struct {
 	} `yaml:"verifier"`
 }
 
-func (p *PrivilegedContainerExperimentConfig) Type() string {
+func (p *PrivilegedContainerExperiment) Name() string {
+	return p.Metadata.Name
+}
+
+func (p *PrivilegedContainerExperiment) Type() string {
 	return "privileged-container"
 }
 
-func (p *PrivilegedContainerExperimentConfig) Description() string {
+func (p *PrivilegedContainerExperiment) Description() string {
 	return "Run a privileged container in a namespace"
 }
 
-func (p *PrivilegedContainerExperimentConfig) Technique() string {
+func (p *PrivilegedContainerExperiment) Technique() string {
 	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Technique
 }
 
-func (p *PrivilegedContainerExperimentConfig) Tactic() string {
+func (p *PrivilegedContainerExperiment) Tactic() string {
 	return categories.MITRE.PrivilegeEscalation.PrivilegedContainer.Tactic
 }
 
-func (p *PrivilegedContainerExperimentConfig) Framework() string {
+func (p *PrivilegedContainerExperiment) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config PrivilegedContainerExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (p *PrivilegedContainerExperiment) DependsOn() []string {
+	return p.Metadata.DependsOn
+}
 
-	params := config.Parameters.Experiment
-	if params.Image == "" && len(params.Command) == 0 {
-		params.Image = "alpine:latest"
-		params.Command = []string{
+func (p *PrivilegedContainerExperiment) Run(ctx context.Context, client *k8s.Client) error {
+	if p.Parameters.Image == "" && len(p.Parameters.Command) == 0 {
+		p.Parameters.Image = "alpine:latest"
+		p.Parameters.Command = []string{
 			"sh",
 			"-c",
 			"while true; do :; done",
 		}
 	}
-
 	clientset := client.Clientset
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: config.Metadata.Name,
+			Name: p.Metadata.Name,
 			Labels: map[string]string{
-				"experiment": config.Metadata.Name,
+				"experiment": p.Metadata.Name,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: pointer.Int32(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app":        config.Metadata.Name,
-					"experiment": config.Metadata.Name,
+					"app":        p.Metadata.Name,
+					"experiment": p.Metadata.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"experiment": config.Metadata.Name,
-						"app":        config.Metadata.Name,
+						"experiment": p.Metadata.Name,
+						"app":        p.Metadata.Name,
 					},
 				},
 				Spec: corev1.PodSpec{
-					HostNetwork: params.HostNetwork,
-					HostPID:     params.HostPid,
+					HostNetwork: p.Parameters.HostNetwork,
+					HostPID:     p.Parameters.HostPid,
 					Containers: []corev1.Container{
 						{
-							Name:            config.Metadata.Name,
-							Image:           params.Image,
+							Name:            p.Metadata.Name,
+							Image:           p.Parameters.Image,
 							ImagePullPolicy: corev1.PullAlways,
-							Command:         params.Command,
+							Command:         p.Parameters.Command,
 						},
 					},
 				},
@@ -117,6 +114,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 		},
 	}
 
+	params := p.Parameters
 	container := deployment.Spec.Template.Spec.Containers[0]
 	securityContext := &corev1.SecurityContext{}
 	if params.RunAsRoot {
@@ -130,35 +128,28 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	container.SecurityContext = securityContext
 	deployment.Spec.Template.Spec.Containers[0] = container
 
-	_, err = clientset.AppsV1().Deployments(config.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	_, err := clientset.AppsV1().Deployments(p.Metadata.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
-	var config PrivilegedContainerExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return nil, err
-	}
-
+func (p *PrivilegedContainerExperiment) Verify(ctx context.Context, client *k8s.Client) (*verifier.Outcome, error) {
 	clientset := client.Clientset
-	deployment, err := clientset.AppsV1().Deployments(config.Metadata.Namespace).Get(ctx, config.Metadata.Name, metav1.GetOptions{})
+	deployment, err := clientset.AppsV1().Deployments(p.Metadata.Namespace).Get(ctx, p.Metadata.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	params := config.Parameters
+	params := p.Parameters
 
 	verifier := verifier.New(
-		config.Metadata.Name,
-		config.Description(),
-		config.Framework(),
-		config.Tactic(),
-		config.Technique(),
+		p.Metadata.Name,
+		p.Description(),
+		p.Framework(),
+		p.Tactic(),
+		p.Technique(),
 	)
 
 	// Find the container by name, as it may not be the first container in the list due to sidecar injection
-	container, err := client.FindContainerByName(deployment.Spec.Template.Spec.Containers, config.Metadata.Name)
+	container, err := k8s.FindContainerByName(deployment.Spec.Template.Spec.Containers, p.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -216,13 +207,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	return verifier.GetOutcome(), nil
 }
 
-func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
-	var config PrivilegedContainerExperimentConfig
-	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
-	if err != nil {
-		return err
-	}
+func (p *PrivilegedContainerExperiment) Cleanup(ctx context.Context, client *k8s.Client) error {
 	clientset := client.Clientset
-	return clientset.AppsV1().Deployments(config.Metadata.Namespace).Delete(ctx, config.Metadata.Name, metav1.DeleteOptions{})
+	return clientset.AppsV1().Deployments(p.Metadata.Namespace).Delete(ctx, p.Metadata.Name, metav1.DeleteOptions{})
 }

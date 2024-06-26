@@ -3,12 +3,11 @@ package snippets
 import (
 	"fmt"
 
-	embedComponents "github.com/operantai/secops-chaos/components"
-	embedExperiments "github.com/operantai/secops-chaos/experiments"
+	embeded "github.com/operantai/secops-chaos"
 )
 
 func GetComponentTemplate(component string) ([]byte, error) {
-	content, err := embedComponents.EmbeddedComponents.ReadFile(fmt.Sprintf("%s.yaml", component))
+	content, err := embeded.EmbeddedComponents.ReadFile(fmt.Sprintf("components/%s.yaml", component))
 	if err != nil {
 		return nil, err
 	}
@@ -16,7 +15,7 @@ func GetComponentTemplate(component string) ([]byte, error) {
 }
 
 func GetExperimentTemplate(experiment string) ([]byte, error) {
-	content, err := embedExperiments.EmbeddedExperiments.ReadFile(fmt.Sprintf("%s.yaml", experiment))
+	content, err := embeded.EmbeddedExperiments.ReadFile(fmt.Sprintf("experiments/%s.yaml", experiment))
 	if err != nil {
 		return nil, err
 	}
