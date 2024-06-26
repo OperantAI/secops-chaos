@@ -205,10 +205,11 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 			return nil, err
 		}
 		for _, pod := range pods {
-			_, _, err := client.ExecuteRemoteCommand(ctx, config.Metadata.Namespace, pod.Name, container.Name, config.Parameters.Verifier.Command)
+			output, _, err := client.ExecuteRemoteCommand(ctx, config.Metadata.Namespace, pod.Name, container.Name, config.Parameters.Verifier.Command)
 			if err != nil {
 				verifier.Fail("Command")
 			}
+			verifier.StoreResultOutputs(config.Metadata.Name, string(output))
 		}
 	}
 
