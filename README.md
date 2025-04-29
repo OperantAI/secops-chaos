@@ -13,7 +13,7 @@
 <div align="center">
   <h3 align="center">secops-chaos</h3>
   <p align="center">
-    Security-focused Chaos Experiments for DevSecOps Teams
+    Red-teaming for AI and Cloud
     <br />
     <a href="https://github.com/operantai/secops-chaos/blob/main/README.md"><strong>Explore the docs »</strong></a>
     <br />
@@ -24,7 +24,7 @@
   </p>
 </div>
 
-**secops-chaos** is a Chaos Engineering tool focused on Security at Runtime. The tool is designed to discover security weaknesses by experimentation in Cloud Native environments.
+**secops-chaos** is a Chaos Engineering tool focused on Red teaming for AI and cloud apps. The tool is designed to discover security weaknesses by experimentation.
 
 ## Getting Started
 
