@@ -13,7 +13,7 @@
 <div align="center">
   <h3 align="center">secops-chaos</h3>
   <p align="center">
-    Security-focused Chaos Experiments for DevSecOps Teams
+    Security-focused Chaos Red-teaming for AI and Cloud
     <br />
     <a href="https://github.com/operantai/secops-chaos/blob/main/README.md"><strong>Explore the docs »</strong></a>
     <br />
