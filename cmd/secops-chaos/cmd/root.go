@@ -20,6 +20,6 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		output.WriteError(err.Error())
+		output.WriteError("%s", err.Error())
 	}
 }
