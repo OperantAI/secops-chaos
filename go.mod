@@ -1,7 +1,6 @@
 module github.com/operantai/secops-chaos
 
-go 1.21.3
-toolchain go1.24.1
+go 1.24.1
 
 require (
 	github.com/charmbracelet/lipgloss v0.9.1
