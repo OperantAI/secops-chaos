@@ -3,7 +3,7 @@ package components
 import (
 	"context"
 
-	"github.com/operantai/secops-chaos/internal/k8s"
+	"github.com/operantai/woodpecker/internal/k8s"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	defaultSecopsChaosAIImage = "ghcr.io/operantai/secops-chaos-ai:latest"
+	defaultSecopsChaosAIImage = "ghcr.io/operantai/woodpecker-ai:latest"
 )
 
 type AI struct{}
 
 func (ai *AI) Type() string {
-	return "secops-chaos-ai"
+	return "woodpecker-ai"
 }
 
 func (ai *AI) Description() string {

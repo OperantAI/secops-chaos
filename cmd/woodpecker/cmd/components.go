@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operantai/secops-chaos/internal/components"
-	"github.com/operantai/secops-chaos/internal/output"
-	"github.com/operantai/secops-chaos/internal/snippets"
+	"github.com/operantai/woodpecker/internal/components"
+	"github.com/operantai/woodpecker/internal/output"
+	"github.com/operantai/woodpecker/internal/snippets"
 	"github.com/spf13/cobra"
 )
 
 // cleanCmd represents the clean command
 var componentCmd = &cobra.Command{
 	Use:   "component",
-	Short: "Manage secops-chaos optional components",
-	Long:  "Manage secops-chaos optional components",
+	Short: "Manage woodpecker optional components",
+	Long:  "Manage woodpecker optional components",
 	Run: func(cmd *cobra.Command, args []string) {
 		allComponents := components.ListComponents()
 		table := output.NewTable([]string{"Type", "Description"})

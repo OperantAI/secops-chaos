@@ -1,6 +1,6 @@
 # Experiments
 
-**secops-chaos** experiments are driven by **experiment** files, they all follow a common format, made up of a `metadata` and `parameters` section.
+**woodpecker** experiments are driven by **experiment** files, they all follow a common format, made up of a `metadata` and `parameters` section.
 
 ``` yaml
 experiments:
@@ -15,17 +15,17 @@ experiments:
 
 ## Available Experiments
 
-For a list of available experiments run `secops-chaos experiment`. You can then generate a example template to get started:
+For a list of available experiments run `woodpecker experiment`. You can then generate a example template to get started:
 
 ```sh
-secops-chaos experiment snippet -e <experiment-type>
+woodpecker experiment snippet -e <experiment-type>
 ```
 
 ## Implementing a new Experiment
 
-Each experiment within `secops-chaos` adheres to a shared interface, this allows for a common set of functionality to be used across all experiments.
+Each experiment within `woodpecker` adheres to a shared interface, this allows for a common set of functionality to be used across all experiments.
 
-When implementing a new experiment you should create a new file starting with `experiment-` within the [internal/experiments](https://github.com/OperantAI/secops-chaos/blob/main/internal/experiments/) directory, and implement the `Experiment` interface.
+When implementing a new experiment you should create a new file starting with `experiment-` within the [internal/experiments](https://github.com/OperantAI/woodpecker/blob/main/internal/experiments/) directory, and implement the `Experiment` interface.
 
 ```go
 type Experiment interface {
@@ -102,10 +102,10 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.cli
 
 `Verify`, and `Clean` also follow the same pattern, and are passed the same `ExperimentConfig` struct.
 
-Finally, add your Experiment to the Experiment registry in [internal/experiments/registry.go](https://github.com/operantai/secops-chaos/blob/main/internal/experiments/registry.go), and create a new experiment file in the [experiments](https://github.com/operantai/secops-chaos/blob/main/experiments) directory.
+Finally, add your Experiment to the Experiment registry in [internal/experiments/registry.go](https://github.com/operantai/woodpecker/blob/main/internal/experiments/registry.go), and create a new experiment file in the [experiments](https://github.com/operantai/woodpecker/blob/main/experiments) directory.
 
 Now you're set to cause some chaos! 🎉
 
 ``` go
-secops-chaos run -f experiments/my-experiment.yaml
+woodpecker run -f experiments/my-experiment.yaml
 ```

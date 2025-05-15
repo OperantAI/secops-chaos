@@ -6,9 +6,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/operantai/secops-chaos/internal/experiments"
-	"github.com/operantai/secops-chaos/internal/output"
-	"github.com/operantai/secops-chaos/internal/snippets"
+	"github.com/operantai/woodpecker/internal/experiments"
+	"github.com/operantai/woodpecker/internal/output"
+	"github.com/operantai/woodpecker/internal/snippets"
 	"github.com/spf13/cobra"
 )
 

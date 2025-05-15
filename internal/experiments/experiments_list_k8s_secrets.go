@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/operantai/secops-chaos/internal/executor"
+	"github.com/operantai/woodpecker/internal/executor"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/operantai/secops-chaos/internal/categories"
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/verifier"
+	"github.com/operantai/woodpecker/internal/categories"
+	"github.com/operantai/woodpecker/internal/k8s"
+	"github.com/operantai/woodpecker/internal/verifier"
 	"gopkg.in/yaml.v3"
 )
 

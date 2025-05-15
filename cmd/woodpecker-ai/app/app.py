@@ -10,7 +10,7 @@ import os
 def create_app() -> FastAPI:
 
     app = FastAPI(
-        title="Secops Chaos AI API",
+        title="Woodpecker AI API",
     )
 
     register_routes(app)

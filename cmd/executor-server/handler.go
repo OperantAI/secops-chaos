@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/operantai/secops-chaos/internal/k8s"
+	"github.com/operantai/woodpecker/internal/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"os"

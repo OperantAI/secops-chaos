@@ -1,4 +1,4 @@
-module github.com/operantai/secops-chaos
+module github.com/operantai/woodpecker
 
 go 1.24.1
 

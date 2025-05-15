@@ -7,9 +7,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/output"
-	"github.com/operantai/secops-chaos/internal/verifier"
+	"github.com/operantai/woodpecker/internal/k8s"
+	"github.com/operantai/woodpecker/internal/output"
+	"github.com/operantai/woodpecker/internal/verifier"
 )
 
 // Experiment is the interface for an experiment
@@ -91,7 +91,7 @@ func (r *Runner) Run() {
 		if err := experiment.Run(r.ctx, r.client, e); err != nil {
 			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
-		output.WriteInfo("Finished running experiment %s. Check results using secops-chaos experiment verify command. \n", e.Metadata.Name)
+		output.WriteInfo("Finished running experiment %s. Check results using woodpecker experiment verify command. \n", e.Metadata.Name)
 	}
 }
 

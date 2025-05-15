@@ -28,7 +28,7 @@ jobs:
     - name: Test
       run: make test
 
-  release-secops-chaos-cli:
+  release-woodpecker-cli:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: go-build-test
@@ -55,7 +55,7 @@ jobs:
 
     strategy:
       matrix:
-        image: [ "secops-chaos-ai", "secops-chaos-executor" ]
+        image: [ "woodpecker-ai", "woodpecker-executor" ]
 
     steps:
       - name: Checkout

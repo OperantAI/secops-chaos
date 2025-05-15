@@ -1,7 +1,6 @@
-# Secops Chaos for AI
+# Woodpecker for AI
 
-Secops Chaos component for running security-focused chaos experiments
-against AI apps and APIs
+Woodpecker component for redteaming against AI apps and APIs
 
 ## Pre-commit
 
@@ -26,11 +25,11 @@ export OPENAI_API_KEY="my-api-key"
 ## Docker Build
 
 ```sh
-docker build -t secops-chaos-ai:latest . -f Dockerfile
+docker build -t woodpecker-ai:latest . -f Dockerfile
 ````
 
 ## Docker Run
 
 ```sh
-docker run -p 8000:8000 -e OPENAI_KEY=<> secops-chaos-ai:latest
+docker run -p 8000:8000 -e OPENAI_KEY=<> woodpecker-ai:latest
 ````

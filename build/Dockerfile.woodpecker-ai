@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.source=https://github.com/OperantAI/secops-chaos
-LABEL org.opencontainers.image.description="AI Security focused Chaos Experiments"
+LABEL org.opencontainers.image.source=https://github.com/OperantAI/woodpecker
+LABEL org.opencontainers.image.description="AI Security focused Red Teaming"
 
 # Install system packages needed for building
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,15 +21,15 @@ ENV PYTHONDONTWRITEBYTECODE 1
 
 WORKDIR $HOME/app
 
-COPY --chown=user:user ./cmd/secops-chaos-ai/pyproject.toml ./
-COPY --chown=user:user ./cmd/secops-chaos-ai/app ./app
+COPY --chown=user:user ./cmd/woodpecker-ai/pyproject.toml ./
+COPY --chown=user:user ./cmd/woodpecker-ai/app ./app
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
 RUN python -m spacy download en_core_web_sm
 
-COPY --chown=user:user ./cmd/secops-chaos-ai/entrypoint.sh ./
+COPY --chown=user:user ./cmd/woodpecker-ai/entrypoint.sh ./
 
 RUN chmod +x /home/user/app/entrypoint.sh
 
