@@ -1,4 +1,4 @@
-type: "secops-chaos-ai"
-namespace: "secops-chaos"
-image: "ghcr.io/operantai/secops-chaos-ai:latest"
-secretName: "secops-chaos-ai"
+type: "woodpecker-ai"
+namespace: "woodpecker"
+image: "ghcr.io/operantai/woodpecker-ai:latest"
+secretName: "woodpecker-ai"

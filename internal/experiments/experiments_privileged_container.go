@@ -8,9 +8,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/operantai/secops-chaos/internal/categories"
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/verifier"
+	"github.com/operantai/woodpecker/internal/categories"
+	"github.com/operantai/woodpecker/internal/k8s"
+	"github.com/operantai/woodpecker/internal/verifier"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

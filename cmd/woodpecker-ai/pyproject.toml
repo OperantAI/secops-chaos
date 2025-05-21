@@ -1,5 +1,5 @@
 [project]
-name = "secops-chaos-ai"
+name = "woodpecker-ai"
 authors = [
   { name = "Glenn McDonald", email = "glenn.mcdonald@operant.ai" },
   { name = "Priyanka Tembey", email = "priyanka@operant.ai"}
@@ -29,4 +29,4 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-secops-chaos-ai-api = "app.__main__:run_uvicorn"
+woodpecker-ai-api = "app.__main__:run_uvicorn"

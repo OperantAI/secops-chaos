@@ -3,8 +3,8 @@ package snippets
 import (
 	"fmt"
 
-	embedComponents "github.com/operantai/secops-chaos/components"
-	embedExperiments "github.com/operantai/secops-chaos/experiments"
+	embedComponents "github.com/operantai/woodpecker/components"
+	embedExperiments "github.com/operantai/woodpecker/experiments"
 )
 
 func GetComponentTemplate(component string) ([]byte, error) {

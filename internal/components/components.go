@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/output"
+	"github.com/operantai/woodpecker/internal/k8s"
+	"github.com/operantai/woodpecker/internal/output"
 
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var registry = map[string]Component{
-	"secops-chaos-ai": &AI{},
+	"woodpecker-ai": &AI{},
 }
 
 type Installer struct {

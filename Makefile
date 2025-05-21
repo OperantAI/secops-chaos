@@ -1,15 +1,15 @@
-BINARY_NAME = secops-chaos
+BINARY_NAME = woodpecker
 REPO_NAME = github.com/operantai/$(BINARY_NAME)
 GIT_COMMIT = $(shell git rev-list -1 HEAD)
 BUILD_DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 VERSION = $(shell git describe --tags --always --dirty)
-LD_FLAGS = "-X $(REPO_NAME)/cmd/secops-chaos/cmd.GitCommit=$(GIT_COMMIT) -X $(REPO_NAME)/cmd/secops-chaos/cmd.Version=$(GIT_COMMIT) -X $(REPO_NAME)/cmd/secops-chaos/cmd.BuildDate=$(BUILD_DATE)"
+LD_FLAGS = "-X $(REPO_NAME)/cmd/woodpecker/cmd.GitCommit=$(GIT_COMMIT) -X $(REPO_NAME)/cmd/woodpecker/cmd.Version=$(GIT_COMMIT) -X $(REPO_NAME)/cmd/woodpecker/cmd.BuildDate=$(BUILD_DATE)"
 
 all: fmt vet test build
 
 .PHONY: build
 build: ## Build binary
-	@go build -o "bin/$(BINARY_NAME)" -ldflags $(LD_FLAGS) cmd/secops-chaos/main.go
+	@go build -o "bin/$(BINARY_NAME)" -ldflags $(LD_FLAGS) cmd/woodpecker/main.go
 
 .PHONY: fmt
 fmt: ## Run go fmt

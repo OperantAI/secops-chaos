@@ -4,13 +4,13 @@ Copyright 2023 Operant AI
 package cmd
 
 import (
-	"github.com/operantai/secops-chaos/internal/output"
+	"github.com/operantai/woodpecker/internal/output"
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "secops-chaos",
+	Use:   "woodpecker",
 	Short: "",
 	Long:  "",
 }

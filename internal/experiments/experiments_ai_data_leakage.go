@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/operantai/secops-chaos/internal/categories"
-	"github.com/operantai/secops-chaos/internal/k8s"
-	"github.com/operantai/secops-chaos/internal/verifier"
+	"github.com/operantai/woodpecker/internal/categories"
+	"github.com/operantai/woodpecker/internal/k8s"
+	"github.com/operantai/woodpecker/internal/verifier"
 	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/url"
@@ -48,8 +48,8 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 	if err != nil {
 		return err
 	}
-	if !isSecopsChaosAIComponentPresent(ctx, client, config.Metadata.Namespace) {
-		return errors.New("Error in checking for Secops Chaos AI component to run AI experiments. Is it deployed? Deploy with secops-chaos component install command.")
+	if !isWoodpeckerAIComponentPresent(ctx, client, config.Metadata.Namespace) {
+		return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
 	}
 	pf := client.NewPortForwarder(ctx)
 	if err != nil {
