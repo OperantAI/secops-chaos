@@ -1,6 +1,6 @@
 module github.com/operantai/woodpecker
 
-go 1.24.1
+go 1.24.3
 
 require (
 	github.com/charmbracelet/lipgloss v0.9.1
