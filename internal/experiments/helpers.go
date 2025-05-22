@@ -76,9 +76,9 @@ func removeTempFilesForExperiment(experimentType, experiment string) error {
 	return nil
 }
 
-const SecopsChaosAi = "woodpecker-ai"
+const WoodpeckerAI = "woodpecker-ai"
 
 func isWoodpeckerAIComponentPresent(ctx context.Context, client *k8s.Client, namespace string) bool {
-	_, err := client.Clientset.AppsV1().Deployments(namespace).Get(ctx, SecopsChaosAi, metav1.GetOptions{})
+	_, err := client.Clientset.AppsV1().Deployments(namespace).Get(ctx, WoodpeckerAI, metav1.GetOptions{})
 	return err == nil
 }

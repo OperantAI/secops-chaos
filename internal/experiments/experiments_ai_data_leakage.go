@@ -56,7 +56,7 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 		return err
 	}
 	defer pf.Stop()
-	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", SecopsChaosAi), 8000)
+	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", WoodpeckerAI), 8000)
 	if err != nil {
 		return err
 	}
