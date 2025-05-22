@@ -13,7 +13,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21.3'
+        go-version: '1.24.3'
 
     - name: Build
       run: make build
@@ -21,10 +21,9 @@ jobs:
     - name: Test
       run: make test
 
-  build-and-push-docker:
+  build-docker:
     runs-on: ubuntu-latest
     needs: go-build-test
-    permissions: write-all
 
     strategy:
       matrix:
@@ -34,33 +33,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Docker Meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/${{ github.repository }}/${{matrix.image}}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha  
-
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
+      - name: Build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: "build/Dockerfile.${{matrix.image}}"
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: false
