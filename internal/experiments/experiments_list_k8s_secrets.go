@@ -50,10 +50,14 @@ func (p *ListK8sSecretsConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ListK8sSecretsConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ListK8sSecretsConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config ListK8sSecretsConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
@@ -130,10 +134,14 @@ func (p *ListK8sSecretsConfig) Run(ctx context.Context, client *k8s.Client, expe
 
 }
 
-func (p *ListK8sSecretsConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ListK8sSecretsConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	var config ListK8sSecretsConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return nil, err
 	}
@@ -180,11 +188,15 @@ func (p *ListK8sSecretsConfig) Verify(ctx context.Context, client *k8s.Client, e
 	return v.GetOutcome(), nil
 }
 
-func (p *ListK8sSecretsConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ListK8sSecretsConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	clientset := client.Clientset
 	var config ListK8sSecretsConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}

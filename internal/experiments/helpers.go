@@ -3,11 +3,15 @@ package experiments
 import (
 	"context"
 	"fmt"
-	"github.com/operantai/woodpecker/internal/k8s"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+
+	"github.com/docker/docker/api/types/container"
+	dockerClient "github.com/docker/docker/client"
+	"github.com/operantai/woodpecker/internal/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const tmpFileDir = "/tmp/woodpecker"
@@ -78,7 +82,20 @@ func removeTempFilesForExperiment(experimentType, experiment string) error {
 
 const WoodpeckerAI = "woodpecker-ai"
 
-func isWoodpeckerAIComponentPresent(ctx context.Context, client *k8s.Client, namespace string) bool {
+func isWoodpeckerAIDockerComponentPresent(ctx context.Context, client *dockerClient.Client) bool {
+	containers, err := client.ContainerList(ctx, container.ListOptions{})
+	if err != nil {
+		return false
+	}
+	for _, container := range containers {
+		if slices.Contains(container.Names, WoodpeckerAI) {
+			return true
+		}
+	}
+	return false
+}
+
+func isWoodpeckerAIK8sComponentPresent(ctx context.Context, client *k8s.Client, namespace string) bool {
 	_, err := client.Clientset.AppsV1().Deployments(namespace).Get(ctx, WoodpeckerAI, metav1.GetOptions{})
 	return err == nil
 }

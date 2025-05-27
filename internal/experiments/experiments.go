@@ -7,7 +7,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/operantai/woodpecker/internal/k8s"
 	"github.com/operantai/woodpecker/internal/output"
 	"github.com/operantai/woodpecker/internal/verifier"
 )
@@ -25,29 +24,22 @@ type Experiment interface {
 	// Technique returns the attack method
 	Technique() string
 	// Run runs the experiment, returning an error if it fails
-	Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
+	Run(ctx context.Context, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
+	Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
-	Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error
+	Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error
 }
 
 // Runner runs a set of experiments
 type Runner struct {
 	ctx               context.Context
-	client            *k8s.Client
 	experiments       map[string]Experiment
 	experimentsConfig map[string]*ExperimentConfig
 }
 
 // NewRunner returns a new Runner
 func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
-	// Create a new Kubernetes client
-	client, err := k8s.NewClient()
-	if err != nil {
-		output.WriteFatal("Failed to create Kubernetes client: %s", err)
-	}
-
 	experimentMap := make(map[string]Experiment)
 	experimentConfigMap := make(map[string]*ExperimentConfig)
 
@@ -73,11 +65,7 @@ func NewRunner(ctx context.Context, experimentFiles []string) *Runner {
 	}
 
 	return &Runner{
-		ctx: ctx,
-		client: &k8s.Client{
-			Clientset:  client.Clientset,
-			RestConfig: client.RestConfig,
-		},
+		ctx:               ctx,
 		experiments:       experimentMap,
 		experimentsConfig: experimentConfigMap,
 	}
@@ -88,7 +76,7 @@ func (r *Runner) Run() {
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
 		output.WriteInfo("Running experiment %s", e.Metadata.Name)
-		if err := experiment.Run(r.ctx, r.client, e); err != nil {
+		if err := experiment.Run(r.ctx, e); err != nil {
 			output.WriteError("Experiment %s failed with error: %s", e.Metadata.Name, err)
 		}
 		output.WriteInfo("Finished running experiment %s. Check results using woodpecker experiment verify command. \n", e.Metadata.Name)
@@ -101,7 +89,7 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 	outcomes := []*verifier.Outcome{}
 	for _, e := range r.experimentsConfig {
 		experiment := r.experiments[e.Metadata.Type]
-		outcome, err := experiment.Verify(r.ctx, r.client, e)
+		outcome, err := experiment.Verify(r.ctx, e)
 		if err != nil {
 			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
 		}
@@ -122,13 +110,8 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 
 	// if output flag is set, print JSON or YAML output
 	if outputFormat != "" {
-		k8sVersion, err := r.client.GetK8sVersion()
-		if err != nil {
-			output.WriteError("Failed to get Kubernetes version: %s", err)
-		}
 		structuredOutput := verifier.StructuredOutput{
-			K8sVersion: k8sVersion.String(),
-			Results:    outcomes,
+			Results: outcomes,
 		}
 		switch strings.ToLower(outputFormat) {
 		case "json":
@@ -149,7 +132,7 @@ func (r *Runner) Cleanup() {
 	for _, e := range r.experimentsConfig {
 		output.WriteInfo("Cleaning up experiment %s", e.Metadata.Name)
 		experiment := r.experiments[e.Metadata.Type]
-		if err := experiment.Cleanup(r.ctx, r.client, e); err != nil {
+		if err := experiment.Cleanup(r.ctx, e); err != nil {
 			output.WriteError("Experiment %s cleanup failed: %s", e.Metadata.Name, err)
 		}
 

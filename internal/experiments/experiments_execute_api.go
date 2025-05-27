@@ -65,10 +65,14 @@ func (p *ExecuteAPIExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config ExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
@@ -144,7 +148,7 @@ func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client
 	return nil
 }
 
-func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config ExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -190,7 +194,7 @@ func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Cli
 	return v.GetOutcome(), nil
 }
 
-func (p *ExecuteAPIExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ExecuteAPIExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
 	var config RemoteExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)

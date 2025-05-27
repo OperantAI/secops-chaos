@@ -53,10 +53,14 @@ func (p *ContainerSecretsExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
+	err = yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
 	if err != nil {
 		return err
 	}
@@ -132,10 +136,14 @@ func (p *ContainerSecretsExperimentConfig) Run(ctx context.Context, client *k8s.
 	return nil
 }
 
-func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ContainerSecretsExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
+	err = yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -215,10 +223,14 @@ func checkConfigMapForSecrets(configMap corev1.ConfigMap, envTest []ContainerSec
 	return false
 }
 
-func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ContainerSecretsExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var containerSecretsExperimentConfig ContainerSecretsExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
+	err = yaml.Unmarshal(yamlObj, &containerSecretsExperimentConfig)
 	if err != nil {
 		return err
 	}

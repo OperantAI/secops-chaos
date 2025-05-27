@@ -50,10 +50,14 @@ func (p *HostPathMountExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *HostPathMountExperimentConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
+	err = yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return err
 	}
@@ -119,10 +123,14 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, client *k8s.Cli
 	return err
 }
 
-func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
+	err = yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -164,10 +172,14 @@ func checkVolumes(pod corev1.Pod, volumePath string) bool {
 	return false
 }
 
-func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *HostPathMountExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var hostPathMountExperimentConfig HostPathMountExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
+	err = yaml.Unmarshal(yamlObj, &hostPathMountExperimentConfig)
 	if err != nil {
 		return err
 	}

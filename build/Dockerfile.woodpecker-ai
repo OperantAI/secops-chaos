@@ -14,10 +14,10 @@ ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
 # ensures that the python output is sent straight to terminal (e.g. your container log)
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
-ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR $HOME/app
 
