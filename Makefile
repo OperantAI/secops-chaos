@@ -11,7 +11,7 @@ all: fmt vet test build
 build: ## Build binary
 	@go build -o "bin/$(BINARY_NAME)" -ldflags $(LD_FLAGS) cmd/woodpecker/main.go
 
-build-ai: ## Build woodpecker AI container
+build-woodpecker-ai: ## Build woodpecker AI container
 	@docker build -f build/Dockerfile.woodpecker-ai .
 
 .PHONY: fmt
