@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	dockerClient "github.com/docker/docker/client"
 	"github.com/operantai/woodpecker/internal/categories"
 	"github.com/operantai/woodpecker/internal/k8s"
 	"github.com/operantai/woodpecker/internal/verifier"
@@ -41,31 +42,55 @@ func (p *LLMDataLeakageExperiment) Framework() string {
 	return string(categories.MitreAtlas)
 }
 
-func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *LLMDataLeakageExperiment) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
 	var config LLMDataLeakageExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
-	if !isWoodpeckerAIComponentPresent(ctx, client, config.Metadata.Namespace) {
-		return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
-	}
-	pf := client.NewPortForwarder(ctx)
-	if err != nil {
-		return err
-	}
-	defer pf.Stop()
-	forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", WoodpeckerAI), 8000)
-	if err != nil {
-		return err
-	}
-	results := make(map[string]ExecuteAIAPIResult)
-	for _, api := range config.Parameters.Apis {
 
+	results := make(map[string]ExecuteAIAPIResult)
+	var addr string
+	var port int
+	switch config.Metadata.Namespace {
+	case "local":
+		client, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
+		if err != nil {
+			return err
+		}
+		defer client.Close()
+		if !isWoodpeckerAIDockerComponentPresent(ctx, client) {
+			return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
+		}
+		addr = "127.0.0.1"
+		port = 8000
+	default:
+		client, err := k8s.NewClient()
+		if err != nil {
+			return err
+		}
+		if !isWoodpeckerAIK8sComponentPresent(ctx, client, config.Metadata.Namespace) {
+			return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
+		}
+		pf := client.NewPortForwarder(ctx)
+		if err != nil {
+			return err
+		}
+		defer pf.Stop()
+		forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", WoodpeckerAI), 8000)
+		if err != nil {
+			return err
+		}
+
+		addr = pf.Addr()
+		port = int(forwardedPort.Local)
+	}
+
+	for _, api := range config.Parameters.Apis {
 		url := url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("%s:%d", pf.Addr(), forwardedPort.Local),
+			Host:   fmt.Sprintf("%s:%d", addr, port),
 			Path:   "/ai-experiments",
 		}
 
@@ -120,7 +145,7 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, client *k8s.Client, 
 	return nil
 }
 
-func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config LLMDataLeakageExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -193,7 +218,7 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, client *k8s.Clien
 	return v.GetOutcome(), nil
 }
 
-func (p *LLMDataLeakageExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *LLMDataLeakageExperiment) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
 	var config LLMDataLeakageExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)

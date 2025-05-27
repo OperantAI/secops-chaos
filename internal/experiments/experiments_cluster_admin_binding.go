@@ -45,7 +45,11 @@ func (p *ClusterAdminBindingExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, err := yaml.Marshal(experimentConfig)
 	if err != nil {
@@ -141,10 +145,14 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return nil, err
 	}
@@ -183,10 +191,14 @@ func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, client
 	return v.GetOutcome(), nil
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *ClusterAdminBindingExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config ClusterAdminBindingExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}

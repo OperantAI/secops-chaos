@@ -56,10 +56,14 @@ func (k *KubeExec) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (k *KubeExec) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (k *KubeExec) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config KubeExec
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
@@ -95,7 +99,7 @@ func (k *KubeExec) Run(ctx context.Context, client *k8s.Client, experimentConfig
 
 }
 
-func (k *KubeExec) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (k *KubeExec) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config KubeExec
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -134,7 +138,7 @@ func (k *KubeExec) Verify(ctx context.Context, client *k8s.Client, experimentCon
 	return v.GetOutcome(), nil
 }
 
-func (k *KubeExec) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (k *KubeExec) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
 	var config KubeExec
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)

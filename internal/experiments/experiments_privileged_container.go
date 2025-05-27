@@ -60,10 +60,14 @@ func (p *PrivilegedContainerExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config PrivilegedContainerExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
@@ -134,10 +138,14 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, client *k
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	var config PrivilegedContainerExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return nil, err
 	}
@@ -215,10 +223,14 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, client
 	return verifier.GetOutcome(), nil
 }
 
-func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config PrivilegedContainerExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}

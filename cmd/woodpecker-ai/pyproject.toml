@@ -9,9 +9,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
-  "asyncio==3.4.3",
   "fastapi>=0.110",
-  "pydantic==1.10.14",
+  "pydantic>=2.0.0",
   "openai==1.30.5",
   # https://github.com/explosion/spaCy/issues/13528
   "numpy==1.26.4",

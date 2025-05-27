@@ -49,10 +49,14 @@ func (p *RemoteExecuteAPIExperimentConfig) Framework() string {
 	return string(categories.Mitre)
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config RemoteExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
@@ -74,10 +78,14 @@ func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, client *k8s.
 	return nil
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	var config RemoteExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return nil, err
 	}
@@ -139,11 +147,15 @@ func (p *RemoteExecuteAPIExperimentConfig) retrieveAPIResponse(url string) (*Res
 	return &result, nil
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *RemoteExecuteAPIExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	clientset := client.Clientset
 	var config RemoteExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}

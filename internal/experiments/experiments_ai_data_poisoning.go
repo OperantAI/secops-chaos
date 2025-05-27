@@ -41,15 +41,19 @@ func (p *LLMDataPoisoningExperiment) Framework() string {
 	return string(categories.MitreAtlas)
 }
 
-func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, experimentConfig *ExperimentConfig) error {
+	client, err := k8s.NewClient()
+	if err != nil {
+		return err
+	}
 	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
-	err := yaml.Unmarshal(yamlObj, &config)
+	err = yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return err
 	}
 
-	if !isWoodpeckerAIComponentPresent(ctx, client, config.Metadata.Namespace) {
+	if !isWoodpeckerAIK8sComponentPresent(ctx, client, config.Metadata.Namespace) {
 		return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
 	}
 	pf := client.NewPortForwarder(ctx)
@@ -122,7 +126,7 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, client *k8s.Client
 	return nil
 }
 
-func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
 	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -195,7 +199,7 @@ func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, client *k8s.Cli
 	return v.GetOutcome(), nil
 }
 
-func (p *LLMDataPoisoningExperiment) Cleanup(ctx context.Context, client *k8s.Client, experimentConfig *ExperimentConfig) error {
+func (p *LLMDataPoisoningExperiment) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
 	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)

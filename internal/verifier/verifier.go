@@ -46,8 +46,7 @@ type AIVerifierOutcome struct {
 
 // StructuredOutput is a pretty-printed JSON or YAML  output of the verifier
 type StructuredOutput struct {
-	K8sVersion string     `json:"k8s_version" yaml:"k8s_version"`
-	Results    []*Outcome `json:"results" yaml:"results"`
+	Results []*Outcome `json:"results" yaml:"results"`
 }
 
 // New returns a new Verifier instance
