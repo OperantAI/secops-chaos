@@ -1,0 +1,26 @@
+[project]
+name = "woodpecker-ai-app"
+authors = [
+  { name = "Glenn McDonald", email = "glenn.mcdonald@operant.ai" },
+  { name = "Priyanka Tembey", email = "priyanka@operant.ai"}
+]
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+  "fastapi>=0.110",
+  "pydantic>=2.0.0",
+  "openai==1.30.5",
+  "uvicorn[standard]>=0.29",
+]
+
+[tool.setuptools]
+packages = ["app"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+woodpecker-ai-api = "app.__main__:run_uvicorn"

@@ -91,7 +91,7 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, experimentConfig *Ex
 		url := url.URL{
 			Scheme: "http",
 			Host:   fmt.Sprintf("%s:%d", addr, port),
-			Path:   "/ai-experiments",
+			Path:   "/chat",
 		}
 
 		var requestBody []byte

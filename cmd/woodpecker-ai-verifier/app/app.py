@@ -1,25 +1,35 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
 from typing import List
 from pydantic import BaseModel
 from .verifiers import AIExperimentVerifierResult
 from .sensitive_data_verifier import VerifySensitiveData
-import os
+
+class AIExperiment(BaseModel):
+    model: str
+    ai_api: str
+    system_prompt: str
+    prompt: str
+    verify_prompt_checks: List[str]
+    verify_response_checks: List[str]
+
+class AIExperimentResponse(BaseModel):
+    model: str
+    ai_api: str
+    prompt: str
+    api_response: str
+    verified_prompt_checks: List[AIExperimentVerifierResult]
+    verified_response_checks: List[AIExperimentVerifierResult]
 
 def create_app() -> FastAPI:
 
     app = FastAPI(
-        title="Woodpecker AI API",
+        title="Woodpecker AI Verifier API",
     )
 
     register_routes(app)
 
     return app
-
-client = OpenAI(
-    api_key=os.getenv("OPENAI_KEY")
-)
 
 def register_routes(
         app: FastAPI,
@@ -35,36 +45,10 @@ def register_routes(
     async def root():
         return {"message": "Hello World"}
 
-
-
-    class AIExperiment(BaseModel):
-        model: str
-        ai_api: str
-        system_prompt: str
-        prompt: str
-        verify_prompt_checks: List[str]
-        verify_response_checks: List[str]
-
-    class AIExperimentResponse(BaseModel):
-        model: str
-        ai_api: str
-        prompt: str
-        api_response: str
-        verified_prompt_checks: List[AIExperimentVerifierResult]
-        verified_response_checks: List[AIExperimentVerifierResult]
-
-
     @app.post("/ai-experiments")
     async def chat(experiment: AIExperiment):
         match experiment.model:
             case "gpt-4o":
-                completion = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages = [
-                        {"role": "system", "content": experiment.system_prompt},
-                        {"role": "user", "content": experiment.prompt}
-                    ]
-                )
                 verified_prompt_checks = list()
                 verified_response_checks = list()
                 for check in experiment.verify_prompt_checks:

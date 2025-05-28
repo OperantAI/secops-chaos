@@ -186,6 +186,7 @@ func (ai *AI) Uninstall(ctx context.Context, config *Config) error {
 		for _, container := range containers {
 			if slices.Contains(container.Names, "/woodpecker-ai") {
 				woodpeckerID = container.ID
+				break
 			}
 		}
 
@@ -193,7 +194,7 @@ func (ai *AI) Uninstall(ctx context.Context, config *Config) error {
 			return errors.New("Could not find woodpecker-ai container to remove")
 		}
 
-		return client.ContainerRemove(ctx, woodpeckerID, container.RemoveOptions{})
+		return client.ContainerRemove(ctx, woodpeckerID, container.RemoveOptions{Force: true})
 	default:
 		client, err := k8s.NewClient()
 		if err != nil {

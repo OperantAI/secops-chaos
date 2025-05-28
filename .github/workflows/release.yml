@@ -49,7 +49,7 @@ jobs:
 
     strategy:
       matrix:
-        image: [ "woodpecker-ai", "woodpecker-executor" ]
+        image: [ "woodpecker-ai-verifier", "woodpecker-executor" ]
 
     steps:
       - name: Checkout
