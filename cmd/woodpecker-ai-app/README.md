@@ -31,5 +31,5 @@ docker build -t woodpecker-ai-app:latest . -f Dockerfile
 ## Docker Run
 
 ```sh
-docker run -p 8000:8000 -e OPENAI_KEY=<> woodpecker-ai:latest
+docker run -p 8000:8000 -e OPENAI_KEY=<> woodpecker-ai-app:latest
 ````
