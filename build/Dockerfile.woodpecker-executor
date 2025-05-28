@@ -12,11 +12,11 @@ RUN mkdir -p /app/bin
 ENV CGO_ENABLED=0
 RUN go build \
     -o bin \
-    ./cmd/executor-server
+    ./cmd/woodpecker-executor-server
 
 EXPOSE 4000
 
 FROM gcr.io/distroless/base-debian11
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /app/bin/* /app/bin/
-CMD ["/app/bin/executor-server"]
+CMD ["/app/bin/woodpecker-executor-server"]
