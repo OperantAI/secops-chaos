@@ -34,6 +34,15 @@ type ExperimentMetadata struct {
 	Type string `yaml:"type"`
 }
 
+type AIAppRequest struct {
+	SystemPrompt string `json:"system_prompt" yaml:"system_prompt"`
+	Prompt       string `json:"prompt" yaml:"prompt"`
+}
+
+type AIAppResponse struct {
+	Message string `json:"message" yaml:"message"`
+}
+
 type AIAPIPayload struct {
 	Model                string   `json:"model" yaml:"model"`
 	AIApi                string   `json:"ai_api" yaml:"ai_api"`
@@ -50,7 +59,7 @@ type AIVerifierResult struct {
 	Score      float64 `json:"score"`
 }
 
-type AIAPIResponse struct {
+type AIVerifierAPIResponse struct {
 	Model                  string             `json:"model" yaml:"model"`
 	AIApi                  string             `json:"ai_api" yaml:"ai_api"`
 	Prompt                 string             `json:"prompt" yaml:"prompt"`
@@ -60,17 +69,17 @@ type AIAPIResponse struct {
 }
 
 type ExecuteAIAPI struct {
-	Description      string        `yaml:"description"`
-	Payload          AIAPIPayload  `yaml:"payload"`
-	ExpectedResponse AIAPIResponse `yaml:"expected_response"`
+	Description      string                `yaml:"description"`
+	Payload          AIAPIPayload          `yaml:"payload"`
+	ExpectedResponse AIVerifierAPIResponse `yaml:"expected_response"`
 }
 
 type ExecuteAIAPIResult struct {
-	ExperimentName string        `json:"experiment_name"`
-	Description    string        `json:"description"`
-	Timestamp      time.Time     `json:"timestamp"`
-	Status         int           `json:"status"`
-	Response       AIAPIResponse `json:"response"`
+	ExperimentName string                `json:"experiment_name"`
+	Description    string                `json:"description"`
+	Timestamp      time.Time             `json:"timestamp"`
+	Status         int                   `json:"status"`
+	Response       AIVerifierAPIResponse `json:"response"`
 }
 
 // parseExperimentConfig parses a YAML file and returns a slice of ExperimentConfig
