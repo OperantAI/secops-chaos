@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	dockerClient "github.com/docker/docker/client"
 	"github.com/operantai/woodpecker/internal/categories"
-	"github.com/operantai/woodpecker/internal/k8s"
 	"github.com/operantai/woodpecker/internal/verifier"
 	"gopkg.in/yaml.v3"
 	"net/http"
@@ -51,70 +49,76 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, experimentConfig *Ex
 	}
 
 	results := make(map[string]ExecuteAIAPIResult)
-	var addr string
-	var port int
-	switch config.Metadata.Namespace {
-	case "local":
-		client, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
-		if err != nil {
-			return err
-		}
-		defer client.Close()
-		if !isWoodpeckerAIDockerComponentPresent(ctx, client) {
-			return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
-		}
-		addr = "127.0.0.1"
-		port = 8000
-	default:
-		client, err := k8s.NewClient()
-		if err != nil {
-			return err
-		}
-		if !isWoodpeckerAIK8sComponentPresent(ctx, client, config.Metadata.Namespace) {
-			return errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
-		}
-		pf := client.NewPortForwarder(ctx)
-		if err != nil {
-			return err
-		}
-		defer pf.Stop()
-		forwardedPort, err := pf.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", WoodpeckerAI), 8000)
-		if err != nil {
-			return err
-		}
-
-		addr = pf.Addr()
-		port = int(forwardedPort.Local)
+	verifierAddr, appAddr, err := getAIComponentAddrs(ctx, experimentConfig)
+	if err != nil {
+		return err
 	}
 
 	for _, api := range config.Parameters.Apis {
-		url := url.URL{
+		appURL := url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("%s:%d", addr, port),
+			Host:   appAddr,
 			Path:   "/chat",
 		}
 
-		var requestBody []byte
-		if &api.Payload != nil {
-			requestBody, err = json.Marshal(api.Payload)
-			if err != nil {
-				return err
-			}
+		var appRequestBody []byte
+		if &api.Payload == nil {
+			return errors.New("Payload may not be empty")
 		}
-		req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(requestBody))
+
+		appRequestBody, err = json.Marshal(api.Payload)
+		if err != nil {
+			return err
+		}
+		appReq, err := http.NewRequest("POST", appURL.String(), bytes.NewBuffer(appRequestBody))
 		if err != nil {
 			return err
 		}
 
-		req.Header.Add("Content-type", "application/json")
+		appReq.Header.Add("Content-type", "application/json")
 
-		response, err := http.DefaultClient.Do(req)
-		if err != nil || response.StatusCode != 200 {
+		appResponse, err := http.DefaultClient.Do(appReq)
+		if err != nil || appResponse.StatusCode != 200 {
 			return err
 		}
-		defer response.Body.Close()
-		var apiResponse AIAPIResponse
-		err = json.NewDecoder(response.Body).Decode(&apiResponse)
+		defer appResponse.Body.Close()
+
+		var ar AIAppResponse
+		err = json.NewDecoder(appResponse.Body).Decode(&ar)
+		if err != nil {
+			return err
+		}
+
+		verifierURL := url.URL{
+			Scheme: "http",
+			Host:   verifierAddr,
+			Path:   "/v1/ai-experiments",
+		}
+
+		var verifierRequestBody []byte
+		if &api.Payload == nil {
+			return errors.New("Payload may not be empty")
+		}
+
+		verifierRequestBody, err = json.Marshal(api.Payload)
+		if err != nil {
+			return err
+		}
+		verifierReq, err := http.NewRequest("POST", verifierURL.String(), bytes.NewBuffer(verifierRequestBody))
+		if err != nil {
+			return err
+		}
+
+		verifierReq.Header.Add("Content-type", "application/json")
+
+		verifierResponse, err := http.DefaultClient.Do(appReq)
+		if err != nil || appResponse.StatusCode != 200 {
+			return err
+		}
+		defer verifierResponse.Body.Close()
+
+		var vr AIVerifierAPIResponse
+		err = json.NewDecoder(verifierResponse.Body).Decode(&vr)
 		if err != nil {
 			return err
 		}
@@ -123,8 +127,8 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, experimentConfig *Ex
 			Description:    api.Description,
 			ExperimentName: config.Metadata.Name,
 			Timestamp:      time.Now(),
-			Status:         response.StatusCode,
-			Response:       apiResponse,
+			Status:         appResponse.StatusCode,
+			Response:       vr,
 		}
 	}
 

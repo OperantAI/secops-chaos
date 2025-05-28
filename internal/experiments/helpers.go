@@ -2,6 +2,7 @@ package experiments
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -80,7 +81,7 @@ func removeTempFilesForExperiment(experimentType, experiment string) error {
 	return nil
 }
 
-const WoodpeckerAI = "woodpecker-ai"
+const WoodpeckerAI = "woodpecker-ai-verifier"
 
 func isWoodpeckerAIDockerComponentPresent(ctx context.Context, client *dockerClient.Client) bool {
 	containers, err := client.ContainerList(ctx, container.ListOptions{})
@@ -98,4 +99,57 @@ func isWoodpeckerAIDockerComponentPresent(ctx context.Context, client *dockerCli
 func isWoodpeckerAIK8sComponentPresent(ctx context.Context, client *k8s.Client, namespace string) bool {
 	_, err := client.Clientset.AppsV1().Deployments(namespace).Get(ctx, WoodpeckerAI, metav1.GetOptions{})
 	return err == nil
+}
+
+func getAIComponentAddrs(ctx context.Context, config *ExperimentConfig) (string, string, error) {
+	aiAppAddr := "127.0.0.1"
+	aiAppPort := 8080
+	var verifierAddr string
+	var verifierPort int
+	switch config.Metadata.Namespace {
+	case "local":
+		client, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
+		if err != nil {
+			return "", "", err
+		}
+		defer client.Close()
+		if !isWoodpeckerAIDockerComponentPresent(ctx, client) {
+			return "", "", errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
+		}
+		verifierAddr = "127.0.0.1"
+		verifierPort = 8000
+	default:
+		client, err := k8s.NewClient()
+		if err != nil {
+			return "", "", err
+		}
+		if !isWoodpeckerAIK8sComponentPresent(ctx, client, config.Metadata.Namespace) {
+			return "", "", errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
+		}
+		verifierPortForwarder := client.NewPortForwarder(ctx)
+		if err != nil {
+			return "", "", err
+		}
+		defer verifierPortForwarder.Stop()
+		verifierForwardedPort, err := verifierPortForwarder.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", WoodpeckerAI), 8000)
+		if err != nil {
+			return "", "", err
+		}
+
+		aiAppPortForwarder := client.NewPortForwarder(ctx)
+		if err != nil {
+			return "", "", err
+		}
+		defer aiAppPortForwarder.Stop()
+		aiAppPortForwardedPort, err := verifierPortForwarder.Forward(config.Metadata.Namespace, fmt.Sprintf("app=%s", "woodpecker-ai-app"), 8081)
+		if err != nil {
+			return "", "", err
+		}
+
+		aiAppAddr = aiAppPortForwarder.Addr()
+		aiAppPort = int(aiAppPortForwardedPort.Local)
+		verifierAddr = verifierPortForwarder.Addr()
+		verifierPort = int(verifierForwardedPort.Local)
+	}
+	return fmt.Sprintf("%s:%d", verifierAddr, verifierPort), fmt.Sprintf("%s:%d", aiAppAddr, aiAppPort), nil
 }
