@@ -2,8 +2,10 @@ package components
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -73,7 +75,7 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 					},
 				},
 			},
-		}, nil, nil, "")
+		}, nil, nil, "woodpecker-ai")
 		if err != nil {
 			return err
 		}
@@ -169,6 +171,29 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 func (ai *AI) Uninstall(ctx context.Context, config *Config) error {
 	switch config.Namespace {
 	case "local":
+		client, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
+		if err != nil {
+			return err
+		}
+		defer client.Close()
+
+		containers, err := client.ContainerList(ctx, container.ListOptions{All: true})
+		if err != nil {
+			return err
+		}
+
+		var woodpeckerID string
+		for _, container := range containers {
+			if slices.Contains(container.Names, "/woodpecker-ai") {
+				woodpeckerID = container.ID
+			}
+		}
+
+		if woodpeckerID == "" {
+			return errors.New("Could not find woodpecker-ai container to remove")
+		}
+
+		return client.ContainerRemove(ctx, woodpeckerID, container.RemoveOptions{})
 	default:
 		client, err := k8s.NewClient()
 		if err != nil {
