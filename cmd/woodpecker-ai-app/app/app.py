@@ -26,7 +26,7 @@ def register_routes(
         allow_headers=["Authorization", "Content-Type"],
     )
 
-    @app.post("/")
+    @app.post("/chat")
     async def root():
         completion = client.chat.completions.create(
             model="gpt-4o",
