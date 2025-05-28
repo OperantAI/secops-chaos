@@ -1,3 +1,3 @@
 #!/bin/bash
 
-woodpecker-ai-app-api
+woodpecker-ai-app

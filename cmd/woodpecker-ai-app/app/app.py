@@ -6,7 +6,7 @@ import os
 def create_app() -> FastAPI:
 
     app = FastAPI(
-        title="Woodpecker AI App API",
+        title="Woodpecker AI App",
     )
 
     register_routes(app)

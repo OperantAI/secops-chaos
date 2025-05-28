@@ -11,7 +11,6 @@ requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.110",
   "pydantic>=2.0.0",
-  "openai==1.30.5",
   # https://github.com/explosion/spaCy/issues/13528
   "numpy==1.26.4",
   "uvicorn[standard]>=0.29",

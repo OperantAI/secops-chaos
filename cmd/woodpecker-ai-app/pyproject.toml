@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.110",
   "pydantic>=2.0.0",
-  "openai==1.30.5",
+  "openai>=1.82.0",
   "uvicorn[standard]>=0.29",
 ]
 
@@ -23,4 +23,4 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-woodpecker-ai-api = "app.__main__:run_uvicorn"
+woodpecker-ai-app = "app.__main__:run_uvicorn"
