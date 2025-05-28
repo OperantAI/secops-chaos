@@ -5,13 +5,16 @@ from pydantic import BaseModel
 from .verifiers import AIExperimentVerifierResult
 from .sensitive_data_verifier import VerifySensitiveData
 
+
 class AIExperiment(BaseModel):
     model: str
     ai_api: str
     system_prompt: str
     prompt: str
+    response: str
     verify_prompt_checks: List[str]
     verify_response_checks: List[str]
+
 
 class AIExperimentResponse(BaseModel):
     model: str
@@ -20,6 +23,7 @@ class AIExperimentResponse(BaseModel):
     api_response: str
     verified_prompt_checks: List[AIExperimentVerifierResult]
     verified_response_checks: List[AIExperimentVerifierResult]
+
 
 def create_app() -> FastAPI:
 
@@ -31,8 +35,9 @@ def create_app() -> FastAPI:
 
     return app
 
+
 def register_routes(
-        app: FastAPI,
+    app: FastAPI,
 ):
     app.add_middleware(
         CORSMiddleware,
@@ -41,29 +46,37 @@ def register_routes(
         allow_methods=["*"],
         allow_headers=["Authorization", "Content-Type"],
     )
-    @app.get("/")
-    async def root():
-        return {"message": "Hello World"}
 
-    @app.post("/ai-experiments")
+    @app.get("/healthz")
+    async def healthz():
+        return {"status": "ok"}
+
+    @app.post("/v1/ai-experiments")
     async def chat(experiment: AIExperiment):
-        match experiment.model:
-            case "gpt-4o":
-                verified_prompt_checks = list()
-                verified_response_checks = list()
-                for check in experiment.verify_prompt_checks:
-                    match check:
-                        case "PII":
-                            results = VerifySensitiveData(check, experiment.system_prompt + experiment.prompt)
-                            for i in results:
-                                verified_prompt_checks.append(i)
-                for check in experiment.verify_response_checks:
-                    match check:
-                        case "PII":
-                            results = VerifySensitiveData(check, completion.choices[0].message.content)
-                            for i in results:
-                                verified_response_checks.append(i)
+        verified_prompt_checks = list()
+        verified_response_checks = list()
+        for check in experiment.verify_prompt_checks:
+            match check:
+                case "PII":
+                    results = VerifySensitiveData(
+                        check, experiment.system_prompt + experiment.prompt
+                    )
+                    for i in results:
+                        verified_prompt_checks.append(i)
+        for check in experiment.verify_response_checks:
+            match check:
+                case "PII":
+                    results = VerifySensitiveData(
+                        check, experiment.response,
+                    )
+                    for i in results:
+                        verified_response_checks.append(i)
 
-                return AIExperimentResponse(model=experiment.model, ai_api=experiment.ai_api, prompt=experiment.prompt,
-                                            api_response=completion.choices[0].message.content, verified_prompt_checks=verified_prompt_checks,
-                                            verified_response_checks=verified_response_checks)
+        return AIExperimentResponse(
+            model=experiment.model,
+            ai_api=experiment.ai_api,
+            prompt=experiment.prompt,
+            api_response=experiment.response,
+            verified_prompt_checks=verified_prompt_checks,
+            verified_response_checks=verified_response_checks,
+        )

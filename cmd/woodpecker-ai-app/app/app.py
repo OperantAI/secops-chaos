@@ -13,12 +13,10 @@ def create_app() -> FastAPI:
 
     return app
 
-client = OpenAI(
-    api_key=os.getenv("OPENAI_KEY")
-)
+client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
 
 def register_routes(
-        app: FastAPI,
+    app: FastAPI,
 ):
     app.add_middleware(
         CORSMiddleware,
@@ -26,18 +24,18 @@ def register_routes(
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["Authorization", "Content-Type"],
-    ) 
-    @app.get("/")
-    async def root():
-        return {"message": "Hello World"}
+    )
 
-    @app.post("/chat")
-    async def chat():
+    @app.post("/")
+    async def root():
         completion = client.chat.completions.create(
-                                                    model="gpt-4o",
-                                                    messages = [
-                                                        {"role": "system", "content": "You are a helpful banking assistant"},
-                                                        {"role": "user", "content": "Can you give me information regarding my account?"}
-                                                    ]
-                                                )
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful banking assistant"},
+                {
+                    "role": "user",
+                    "content": "Can you give me information regarding my account?",
+                },
+            ],
+        )
         return {"message": completion}
