@@ -48,7 +48,7 @@ The design of **woodpecker** can be broken down into three concepts:
 
 - **Experiments** - Experiments actively try to run something to discover if a security weakness is present.
 - **Verifiers** - Verifiers look at the results of an Experiment and reports their outcome.
-- **Components** - Components are additional applications installed on a K8s cluster to enable and enhance experiment functionality.
+- **Components** - Components are additional applications installed on a K8s cluster or in Docker to enable and enhance experiment functionality.
 
 The woodpecker CLI mirrors this, and exposes `experiment`, and `component` commands.
 
