@@ -34,18 +34,21 @@ make build
 ### Woodpecker-AI-app Installation ( Example Chatbot app )
 
 This is the app that you can customize to suit any chatbot use case, or use as is. To use as is,
-you can run this app in a Docker container as follows. Please note that this needs Docker Desktop to be running on your local machine.
+
+You will first have to build the image locally using -
+
+```shell
+docker build -t woodpecker-ai-app:latest . -f ./build/Dockerfile.woodpecker-ai-app
+```
+Please note that this needs Docker Desktop to be running on your local machine.
+Next, you can run this app in a Docker container as follows.
 Also it needs an OPENAI-KEY as an input to make OpenAI API calls.
 
 ```shell
 docker run -p 9000:9000 -e OPENAI_KEY=<OPENAI_KEY> woodpecker-ai-app:latest
 ```
 
-If you end up making customizations to this app, you will have to build the image locally using -
-
-```shell
-docker build -t woodpecker-ai-app:latest . -f ./build/Dockerfile.woodpecker-ai-app
-```
+To make customizations to this app - go to `./cmd/woodpecker-ai-app`.
 
 ### Woodpecker-AI-verifier Installation
 
@@ -61,6 +64,8 @@ If you end up making any changes in AI-verifier, and want to build the image aga
 ```shell
 docker build -t woodpecker-ai-verifier:latest . -f ./build/Dockerfile.woodpecker-ai-verifier
 ```
+
+To make customizations to this app, go to `./cmd/woodpecker-ai-verifier`
 
 ### Running your first AI red teaming experiment!
 
@@ -136,7 +141,7 @@ Oops, looks like your AI app is in fact leaky and easily broken by relatively si
 
 Now that we have successfully shown a LLM Data leakage vulnerability in our chatbot app, time to secure it and test its security using Operant AI Gatekeeper!
 
-Sign up [here](https://operant.ai) for access to AI Gatekeeper. We will activate your access and notify in the #operantai GenAI hackathon Discord channel.
+Sign up [here](https://www.operant.ai/platform/ai-gatekeeper-trial) for access to AI Gatekeeper. We will activate your access and notify in the #operantai GenAI hackathon Discord channel.
 
 Once you're signed up, visit [Gatekeeper docs](https://docs.operant.ai) page to get started using Gatekeeper.
 
