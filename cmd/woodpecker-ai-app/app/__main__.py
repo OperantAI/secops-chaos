@@ -7,7 +7,7 @@ from .app import create_app
 
 def run_uvicorn():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, help="Port to run the server on", default=8000)
+    parser.add_argument("--port", type=int, help="Port to run the server on", default=9000)
     args = parser.parse_args()
 
     uvicorn.run(

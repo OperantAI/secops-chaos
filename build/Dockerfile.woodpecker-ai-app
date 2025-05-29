@@ -31,6 +31,6 @@ COPY --chown=user:user ./cmd/woodpecker-ai-app/entrypoint.sh ./
 
 RUN chmod +x /home/user/app/entrypoint.sh
 
-EXPOSE 8000
+EXPOSE 9000
 
 CMD ["/home/user/app/entrypoint.sh"]

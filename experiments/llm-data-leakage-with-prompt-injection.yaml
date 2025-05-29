@@ -2,7 +2,7 @@ experiments:
   - metadata:
       name: llm-data-leakage-with-prompt-injection
       type: llm-data-leakage
-      namespace: default
+      namespace: local
     parameters:
       apis:
         - description: Check for PII data leakage in the AI model response

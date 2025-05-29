@@ -5,6 +5,7 @@ go 1.24.3
 require (
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/docker/docker v28.1.1+incompatible
+	github.com/docker/go-connections v0.5.0
 	github.com/gorilla/mux v1.8.0
 	github.com/mattn/go-runewidth v0.0.15
 	github.com/spf13/cobra v1.7.0
@@ -24,7 +25,6 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect

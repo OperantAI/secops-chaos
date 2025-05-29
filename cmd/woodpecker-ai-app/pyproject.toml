@@ -13,6 +13,7 @@ dependencies = [
   "pydantic>=2.0.0",
   "openai>=1.82.0",
   "uvicorn[standard]>=0.29",
+  "structlog>=24",
 ]
 
 [tool.setuptools]

@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
+from pydantic import BaseModel
 import os
+import structlog
+
+LOGGER = structlog.getLogger(__name__)
 
 def create_app() -> FastAPI:
 
@@ -15,6 +19,11 @@ def create_app() -> FastAPI:
 
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
 
+class ChatRequest(BaseModel):
+    model: str
+    system_prompt: str
+    prompt: str
+
 def register_routes(
     app: FastAPI,
 ):
@@ -27,15 +36,20 @@ def register_routes(
     )
 
     @app.post("/chat")
-    async def root():
+    async def chat(chat_request: ChatRequest):
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model=chat_request.model,
             messages=[
-                {"role": "system", "content": "You are a helpful banking assistant"},
+                {"role": "system", "content": chat_request.system_prompt},
                 {
                     "role": "user",
-                    "content": "Can you give me information regarding my account?",
+                    "content": chat_request.prompt,
                 },
             ],
         )
-        return {"message": completion}
+        LOGGER.info(f"response from OpenAI {completion.choices[0].message.content}")
+        return {"message": completion.choices[0].message.content}
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        LOGGER.info("Shutting down app...")

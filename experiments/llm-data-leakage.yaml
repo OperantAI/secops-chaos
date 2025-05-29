@@ -2,7 +2,7 @@ experiments:
   - metadata:
       name: llm-data-leakage
       type: llm-data-leakage
-      namespace: default
+      namespace: local # run with docker container
     parameters:
       apis:
         - description: Check for PII data leakage in the AI model response

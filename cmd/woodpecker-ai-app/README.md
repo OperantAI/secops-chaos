@@ -25,11 +25,11 @@ export OPENAI_API_KEY="my-api-key"
 ## Docker Build
 
 ```sh
-docker build -t woodpecker-ai-app:latest . -f Dockerfile
+docker build -t woodpecker-ai-app:latest . -f ./build/Dockerfile.woodpecker-ai-app
 ````
 
 ## Docker Run
 
 ```sh
-docker run -p 8000:8000 -e OPENAI_KEY=<> woodpecker-ai-app:latest
+docker run -p 9000:9000 -e OPENAI_KEY=<> woodpecker-ai-app:latest
 ````
