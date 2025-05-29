@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/operantai/woodpecker/internal/output"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 )
@@ -46,26 +47,35 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 			return err
 		}
 		defer client.Close()
-		_, err = client.ImagePull(ctx, config.Image, image.PullOptions{})
+		images, err := client.ImageList(ctx, image.ListOptions{})
 		if err != nil {
 			return err
 		}
 
-		var dockerEnv []string
-		for _, secret := range config.SecretEnvs {
-			env, found := os.LookupEnv(secret)
-			if !found {
-				return fmt.Errorf("Secret not found in env vars: %s", secret)
+		imageExists := false
+		for _, img := range images {
+			for _, tag := range img.RepoTags {
+				if tag == config.Image {
+					imageExists = true
+					output.WriteInfo("Using local image: %s", config.Image)
+					break
+				}
 			}
-			dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", secret, env))
 		}
+
+		if !imageExists {
+			_, err = client.ImagePull(ctx, config.Image, image.PullOptions{})
+			if err != nil {
+				return err
+			}
+		}
+
 		resp, err := client.ContainerCreate(ctx, &container.Config{
 			Image: config.Image,
 			Tty:   false,
 			ExposedPorts: nat.PortSet{
 				"8080/tcp": struct{}{},
 			},
-			Env: dockerEnv,
 		}, &container.HostConfig{
 			PortBindings: nat.PortMap{
 				"8080/tcp": []nat.PortBinding{
@@ -84,10 +94,6 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 		}
 	default:
 		client, err := k8s.NewClient()
-		if err != nil {
-			return err
-		}
-		err = client.CheckForSecret(ctx, config.Namespace, config.SecretName)
 		if err != nil {
 			return err
 		}
@@ -118,19 +124,6 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 								Ports: []corev1.ContainerPort{
 									{
 										ContainerPort: 8080,
-									},
-								},
-								Env: []corev1.EnvVar{
-									{
-										Name: "OPENAI_API_KEY",
-										ValueFrom: &corev1.EnvVarSource{
-											SecretKeyRef: &corev1.SecretKeySelector{
-												LocalObjectReference: corev1.LocalObjectReference{
-													Name: config.Type,
-												},
-												Key: "OPENAI_API_KEY",
-											},
-										},
 									},
 								},
 							},
