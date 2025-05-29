@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -89,7 +88,7 @@ func isWoodpeckerAIDockerComponentPresent(ctx context.Context, client *dockerCli
 		return false
 	}
 	for _, container := range containers {
-		if slices.Contains(container.Names, WoodpeckerAI) {
+		if strings.Contains(container.Image, WoodpeckerAI) {
 			return true
 		}
 	}
@@ -103,19 +102,19 @@ func isWoodpeckerAIK8sComponentPresent(ctx context.Context, client *k8s.Client, 
 
 func getAIComponentAddrs(ctx context.Context, config *ExperimentConfig) (string, string, error) {
 	aiAppAddr := "127.0.0.1"
-	aiAppPort := 8080
+	aiAppPort := 9000
 	var verifierAddr string
 	var verifierPort int
 	switch config.Metadata.Namespace {
 	case "local":
-		client, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
+		/*client, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
 		if err != nil {
 			return "", "", err
 		}
 		defer client.Close()
 		if !isWoodpeckerAIDockerComponentPresent(ctx, client) {
 			return "", "", errors.New("Error in checking for woodpecker AI component to run AI experiments. Is it deployed? Deploy with woodpecker component install command.")
-		}
+		}*/
 		verifierAddr = "127.0.0.1"
 		verifierPort = 8000
 	default:

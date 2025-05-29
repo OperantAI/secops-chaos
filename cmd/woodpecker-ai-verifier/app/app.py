@@ -4,6 +4,9 @@ from typing import List
 from pydantic import BaseModel
 from .verifiers import AIExperimentVerifierResult
 from .sensitive_data_verifier import VerifySensitiveData
+import structlog
+
+LOGGER = structlog.getLogger(__name__)
 
 
 class AIExperiment(BaseModel):
@@ -52,7 +55,7 @@ def register_routes(
         return {"status": "ok"}
 
     @app.post("/v1/ai-experiments")
-    async def chat(experiment: AIExperiment):
+    async def ai_experiment(experiment: AIExperiment):
         verified_prompt_checks = list()
         verified_response_checks = list()
         for check in experiment.verify_prompt_checks:
@@ -72,6 +75,9 @@ def register_routes(
                     for i in results:
                         verified_response_checks.append(i)
 
+        LOGGER.info(f"Verified prompt checks: {verified_prompt_checks}")
+        LOGGER.info(f"Verified response checks: {verified_response_checks}")
+
         return AIExperimentResponse(
             model=experiment.model,
             ai_api=experiment.ai_api,
@@ -80,3 +86,7 @@ def register_routes(
             verified_prompt_checks=verified_prompt_checks,
             verified_response_checks=verified_response_checks,
         )
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        LOGGER.info("Shutting down app...")

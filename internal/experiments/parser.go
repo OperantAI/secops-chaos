@@ -43,11 +43,18 @@ type AIAppResponse struct {
 	Message string `json:"message" yaml:"message"`
 }
 
+type AIAppPayload struct {
+	Model        string `json:"model"`
+	SystemPrompt string `json:"system_prompt"`
+	Prompt       string `json:"prompt"`
+}
+
 type AIAPIPayload struct {
 	Model                string   `json:"model" yaml:"model"`
 	AIApi                string   `json:"ai_api" yaml:"ai_api"`
 	SystemPrompt         string   `json:"system_prompt" yaml:"system_prompt"`
 	Prompt               string   `json:"prompt" yaml:"prompt"`
+	Response             string   `json:"response" yaml:"response"`
 	VerifyPromptChecks   []string `json:"verify_prompt_checks" yaml:"verify_prompt_checks"`
 	VerifyResponseChecks []string `json:"verify_response_checks" yaml:"verify_response_checks"`
 }

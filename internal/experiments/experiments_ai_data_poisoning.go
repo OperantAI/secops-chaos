@@ -67,7 +67,13 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, experimentConfig *
 			return errors.New("Payload may not be empty")
 		}
 
-		appRequestBody, err = json.Marshal(api.Payload)
+		aiAppPayload := AIAppPayload{
+			Model:        api.Payload.Model,
+			SystemPrompt: api.Payload.SystemPrompt,
+			Prompt:       api.Payload.Prompt,
+		}
+
+		appRequestBody, err = json.Marshal(aiAppPayload)
 		if err != nil {
 			return err
 		}
@@ -97,11 +103,17 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, experimentConfig *
 		}
 
 		var verifierRequestBody []byte
-		if &api.Payload == nil {
-			return errors.New("Payload may not be empty")
+		verifierRequest := AIAPIPayload{
+			Model:                aiAppPayload.Model,
+			SystemPrompt:         aiAppPayload.SystemPrompt,
+			Prompt:               aiAppPayload.Prompt,
+			AIApi:                api.Payload.AIApi,
+			Response:             ar.Message,
+			VerifyPromptChecks:   api.Payload.VerifyPromptChecks,
+			VerifyResponseChecks: api.Payload.VerifyResponseChecks,
 		}
 
-		verifierRequestBody, err = json.Marshal(api.Payload)
+		verifierRequestBody, err = json.Marshal(verifierRequest)
 		if err != nil {
 			return err
 		}
@@ -112,7 +124,7 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, experimentConfig *
 
 		verifierReq.Header.Add("Content-type", "application/json")
 
-		verifierResponse, err := http.DefaultClient.Do(appReq)
+		verifierResponse, err := http.DefaultClient.Do(verifierReq)
 		if err != nil || appResponse.StatusCode != 200 {
 			return err
 		}

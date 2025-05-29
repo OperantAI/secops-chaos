@@ -24,7 +24,7 @@ pip3 install .
 ## Docker Build
 
 ```sh
-docker build -t woodpecker-ai-verifier:latest . -f Dockerfile
+docker build -t woodpecker-ai-verifier:latest . -f ./build/Dockerfile.woodpecker-ai-verifier
 ````
 
 ## Docker Run
