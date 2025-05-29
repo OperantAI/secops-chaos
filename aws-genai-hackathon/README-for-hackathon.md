@@ -141,7 +141,7 @@ Oops, looks like your AI app is in fact leaky and easily broken by relatively si
 
 Now that we have successfully shown a LLM Data leakage vulnerability in our chatbot app, time to secure it and test its security using Operant AI Gatekeeper!
 
-Sign up [here](https://github.com/OperantAI/woodpecker/blob/main/aws-genai-hackathon/README-for-hackathon.md) for access to AI Gatekeeper. We will activate your access and notify in the #operantai GenAI hackathon Discord channel.
+Sign up [here](https://www.operant.ai/platform/ai-gatekeeper-trial) for access to AI Gatekeeper. We will activate your access and notify in the #operantai GenAI hackathon Discord channel.
 
 Once you're signed up, visit [Gatekeeper docs](https://docs.operant.ai) page to get started using Gatekeeper.
 
