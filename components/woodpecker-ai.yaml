@@ -1,6 +1,0 @@
-type: "woodpecker-ai"
-namespace: "local" # Change to local to run in a docker container, otherwise deploy on current K8s context
-image: "ghcr.io/operantai/woodpecker/woodpecker-ai:latest"
-secretName: "woodpecker-ai"
-secretEnvs:
-  - OPENAI_API_KEY
