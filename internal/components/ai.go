@@ -26,7 +26,7 @@ const (
 type AI struct{}
 
 func (ai *AI) Type() string {
-	return "woodpecker-ai"
+	return "woodpecker-ai-verifier"
 }
 
 func (ai *AI) Description() string {
@@ -72,14 +72,14 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 			Image: config.Image,
 			Tty:   false,
 			ExposedPorts: nat.PortSet{
-				"8080/tcp": struct{}{},
+				"8000/tcp": struct{}{},
 			},
 		}, &container.HostConfig{
 			PortBindings: nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
+				"8000/tcp": []nat.PortBinding{
 					{
 						HostIP:   "0.0.0.0",
-						HostPort: "8080",
+						HostPort: "8000",
 					},
 				},
 			},
