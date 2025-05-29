@@ -3,8 +3,6 @@ package components
 import (
 	"context"
 	"errors"
-	"fmt"
-	"os"
 	"slices"
 
 	"github.com/docker/docker/api/types/container"
