@@ -83,7 +83,7 @@ func (ai *AI) Install(ctx context.Context, config *Config) error {
 					},
 				},
 			},
-		}, nil, nil, "woodpecker-ai")
+		}, nil, nil, config.Type)
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ func (ai *AI) Uninstall(ctx context.Context, config *Config) error {
 
 		var woodpeckerID string
 		for _, container := range containers {
-			if slices.Contains(container.Names, "/woodpecker-ai") {
+			if slices.Contains(container.Names, "/"+config.Type) {
 				woodpeckerID = container.ID
 				break
 			}
