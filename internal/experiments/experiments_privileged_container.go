@@ -138,7 +138,7 @@ func (p *PrivilegedContainerExperimentConfig) Run(ctx context.Context, experimen
 	return err
 }
 
-func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	client, err := k8s.NewClient()
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experi
 	}
 	params := config.Parameters
 
-	verifier := verifier.New(
+	v := verifier.NewLegacy(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
@@ -172,16 +172,16 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experi
 	}
 
 	if config.Parameters.Verifier.DeployedSuccessfully {
-		verifier.Success("Deployed")
+		v.Success("Deployed")
 		if params.Experiment.HostPid {
 			if !deployment.Spec.Template.Spec.HostPID {
-				verifier.Fail("Deployed")
+				v.Fail("Deployed")
 			}
 		}
 
 		if params.Experiment.HostNetwork {
 			if !deployment.Spec.Template.Spec.HostNetwork {
-				verifier.Fail("Deployed")
+				v.Fail("Deployed")
 			}
 		}
 
@@ -189,7 +189,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experi
 			if container.SecurityContext != nil {
 				if container.SecurityContext.RunAsUser != nil {
 					if *container.SecurityContext.RunAsUser != 0 {
-						verifier.Fail("Deployed")
+						v.Fail("Deployed")
 					}
 				}
 			}
@@ -199,7 +199,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experi
 			if container.SecurityContext != nil {
 				if container.SecurityContext.Privileged != nil {
 					if !*container.SecurityContext.Privileged {
-						verifier.Fail("Deployed")
+						v.Fail("Deployed")
 					}
 				}
 			}
@@ -207,7 +207,7 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experi
 	}
 
 	if len(params.Verifier.Command) > 0 {
-		verifier.Success("Command")
+		v.Success("Command")
 		pods, err := client.GetDeploymentsPods(ctx, config.Metadata.Namespace, deployment)
 		if err != nil {
 			return nil, err
@@ -215,12 +215,12 @@ func (p *PrivilegedContainerExperimentConfig) Verify(ctx context.Context, experi
 		for _, pod := range pods {
 			_, _, err := client.ExecuteRemoteCommand(ctx, config.Metadata.Namespace, pod.Name, container.Name, config.Parameters.Verifier.Command)
 			if err != nil {
-				verifier.Fail("Command")
+				v.Fail("Command")
 			}
 		}
 	}
 
-	return verifier.GetOutcome(), nil
+	return v.GetOutcome(), nil
 }
 
 func (p *PrivilegedContainerExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {

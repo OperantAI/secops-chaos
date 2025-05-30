@@ -145,7 +145,7 @@ func (p *ClusterAdminBindingExperimentConfig) Run(ctx context.Context, experimen
 	return err
 }
 
-func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	client, err := k8s.NewClient()
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (p *ClusterAdminBindingExperimentConfig) Verify(ctx context.Context, experi
 		return nil, err
 	}
 
-	v := verifier.New(
+	v := verifier.NewLegacy(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),

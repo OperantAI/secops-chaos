@@ -123,7 +123,7 @@ func (p *HostPathMountExperimentConfig) Run(ctx context.Context, experimentConfi
 	return err
 }
 
-func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	client, err := k8s.NewClient()
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (p *HostPathMountExperimentConfig) Verify(ctx context.Context, experimentCo
 		return nil, err
 	}
 	params := hostPathMountExperimentConfig.Parameters
-	v := verifier.New(
+	v := verifier.NewLegacy(
 		hostPathMountExperimentConfig.Metadata.Name,
 		hostPathMountExperimentConfig.Description(),
 		hostPathMountExperimentConfig.Framework(),

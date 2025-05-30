@@ -163,7 +163,7 @@ func (p *LLMDataPoisoningExperiment) Run(ctx context.Context, experimentConfig *
 	return nil
 }
 
-func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	var config LLMDataPoisoningExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -171,7 +171,8 @@ func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, experimentConfi
 		return nil, err
 	}
 
-	v := verifier.New(
+	// Use the NEW AI-specific verifier with generics
+	v := verifier.NewAIVerifier(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
@@ -184,7 +185,6 @@ func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, experimentConfi
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
 
-	var aiVerifierOutcome *verifier.AIVerifierOutcome
 	for _, rawResult := range rawResults {
 		var results map[string]ExecuteAIAPIResult
 		err = json.Unmarshal(rawResult, &results)
@@ -197,43 +197,50 @@ func (p *LLMDataPoisoningExperiment) Verify(ctx context.Context, experimentConfi
 			if !found {
 				continue
 			}
+
+			// Create properly typed AIVerifierOutcome
+			aiVerifierOutcome := verifier.AIVerifierOutcome{
+				Model:       result.Response.Model,
+				AIApi:       result.Response.AIApi,
+				Prompt:      result.Response.Prompt,
+				APIResponse: result.Response.APIResponse,
+				// Convert the API response types to verifier types
+				VerifiedPromptChecks:   convertToVerifierResults(result.Response.VerifiedPromptChecks),
+				VerifiedResponseChecks: convertToVerifierResults(result.Response.VerifiedResponseChecks),
+			}
+
 			fail := false
 			if api.ExpectedResponse.VerifiedPromptChecks != nil {
-				for _, responseCheck := range api.ExpectedResponse.VerifiedPromptChecks {
-					if result.Response.VerifiedPromptChecks != nil {
+				for range api.ExpectedResponse.VerifiedPromptChecks {
+					if len(aiVerifierOutcome.VerifiedPromptChecks) > 0 {
 						fail = true
 						v.Fail(api.Description)
-						if aiVerifierOutcome == nil {
-							aiVerifierOutcome = &verifier.AIVerifierOutcome{
-								Model:                result.Response.Model,
-								AIApi:                result.Response.AIApi,
-								Prompt:               result.Response.Prompt,
-								APIResponse:          result.Response.APIResponse,
-								VerifiedPromptChecks: nil,
-							}
-						}
-						for _, resultCheck := range result.Response.VerifiedPromptChecks {
-							if resultCheck.Check == responseCheck.Check {
-								aiVerifierOutcome.VerifiedPromptChecks = append(aiVerifierOutcome.VerifiedPromptChecks, verifier.AIVerifierResult{
-									Check:      resultCheck.Check,
-									Detected:   resultCheck.Detected,
-									Score:      resultCheck.Score,
-									EntityType: resultCheck.EntityType,
-								})
-							}
-						}
-
+						break
 					}
 				}
 			}
 			if !fail {
 				v.Success(api.Description)
 			}
+
+			// Store the strongly typed result - NO MORE NULL FIELDS!
 			v.StoreResultOutputs(api.Description, aiVerifierOutcome)
 		}
 	}
 
-	return v.GetOutcome(), nil
+	// Convert to legacy format for backward compatibility
+	typedOutcome := v.GetOutcome()
+	legacyOutcome := &verifier.LegacyOutcome{
+		Experiment:    typedOutcome.Experiment,
+		Description:   typedOutcome.Description,
+		Framework:     typedOutcome.Framework,
+		Tactic:        typedOutcome.Tactic,
+		Technique:     typedOutcome.Technique,
+		Result:        typedOutcome.Result,
+		ResultOutputs: convertToInterfaceMap(typedOutcome.ResultOutputs),
+	}
+
+	return legacyOutcome, nil
 }
 
 func (p *LLMDataPoisoningExperiment) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
