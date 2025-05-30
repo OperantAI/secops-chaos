@@ -90,7 +90,8 @@ func TestGenericVerifier_KubeExecResult(t *testing.T) {
 	jsonStr := string(jsonData)
 	assert.Contains(t, jsonStr, `"stdout"`)
 	assert.Contains(t, jsonStr, `"stderr"`)
-	assert.Contains(t, jsonStr, `"root:x:0:0:root:/root:/bin/bash"`)
+	// Check for the content with escaped newline as it appears in JSON
+	assert.Contains(t, jsonStr, `"root:x:0:0:root:/root:/bin/bash\n"`)
 
 	t.Logf("Generated JSON:\n%s", jsonStr)
 }
