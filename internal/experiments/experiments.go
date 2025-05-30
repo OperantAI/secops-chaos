@@ -5,13 +5,14 @@ package experiments
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/operantai/woodpecker/internal/output"
 	"github.com/operantai/woodpecker/internal/verifier"
 )
 
-// Experiment is the interface for an experiment
+// Experiment interface - keeping it simple with legacy types for now
 type Experiment interface {
 	// Type returns the type of the experiment
 	Type() string
@@ -26,7 +27,7 @@ type Experiment interface {
 	// Run runs the experiment, returning an error if it fails
 	Run(ctx context.Context, experimentConfig *ExperimentConfig) error
 	// Verify verifies the experiment, returning an error if it fails
-	Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error)
+	Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error)
 	// Cleanup cleans up the experiment, returning an error if it fails
 	Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error
 }
@@ -85,32 +86,19 @@ func (r *Runner) Run() {
 
 // RunVerifiers runs all verifiers in the Runner for the provided experiments
 func (r *Runner) RunVerifiers(outputFormat string) {
-	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Result"})
-	outcomes := []*verifier.Outcome{}
-	for _, e := range r.experimentsConfig {
-		experiment := r.experiments[e.Metadata.Type]
-		outcome, err := experiment.Verify(r.ctx, e)
-		if err != nil {
-			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
-		}
-		// if JSON flag is set, append to JSON output
-		if outputFormat != "" {
-			outcomes = append(outcomes, outcome)
-		} else {
-			table.AddRow([]string{
-				outcome.Experiment,
-				outcome.Description,
-				outcome.Framework,
-				outcome.Tactic,
-				outcome.Technique,
-				outcome.GetResultString(),
-			})
-		}
-	}
-
-	// if output flag is set, print JSON or YAML output
 	if outputFormat != "" {
-		structuredOutput := verifier.StructuredOutput{
+		// Handle JSON/YAML output
+		outcomes := []*verifier.LegacyOutcome{}
+		for _, e := range r.experimentsConfig {
+			experiment := r.experiments[e.Metadata.Type]
+			outcome, err := experiment.Verify(r.ctx, e)
+			if err != nil {
+				output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
+			}
+			outcomes = append(outcomes, outcome)
+		}
+
+		structuredOutput := verifier.LegacyStructuredOutput{
 			Results: outcomes,
 		}
 		switch strings.ToLower(outputFormat) {
@@ -124,7 +112,87 @@ func (r *Runner) RunVerifiers(outputFormat string) {
 		return
 	}
 
+	// Handle table output - show each test result as a separate row
+	table := output.NewTable([]string{"Experiment", "Description", "Framework", "Tactic", "Technique", "Test", "Result"})
+
+	for _, e := range r.experimentsConfig {
+		experiment := r.experiments[e.Metadata.Type]
+		outcome, err := experiment.Verify(r.ctx, e)
+		if err != nil {
+			output.WriteFatal("Verifier %s failed: %s", e.Metadata.Name, err)
+		}
+
+		// If there are no specific test results, show overall experiment result
+		if len(outcome.Result) == 0 {
+			table.AddRow([]string{
+				outcome.Experiment,
+				outcome.Description,
+				outcome.Framework,
+				outcome.Tactic,
+				outcome.Technique,
+				"Overall",
+				"No results",
+			})
+		} else {
+			// Show each individual test result as a separate row
+			for testName, result := range outcome.Result {
+				// Add status emoji for better visual feedback
+				status := result
+				if result == verifier.Success {
+					status = "✓ " + result
+				} else if result == verifier.Fail {
+					status = "✗ " + result
+				}
+
+				table.AddRow([]string{
+					outcome.Experiment,
+					outcome.Description,
+					outcome.Framework,
+					outcome.Tactic,
+					outcome.Technique,
+					testName,
+					status,
+				})
+			}
+		}
+	}
+
 	table.Render()
+
+	// Show summary
+	r.printSummary()
+}
+
+// printSummary prints a summary of all experiment results
+func (r *Runner) printSummary() {
+	totalTests := 0
+	passedTests := 0
+	failedTests := 0
+
+	for _, e := range r.experimentsConfig {
+		experiment := r.experiments[e.Metadata.Type]
+		outcome, err := experiment.Verify(r.ctx, e)
+		if err != nil {
+			continue
+		}
+
+		for _, result := range outcome.Result {
+			totalTests++
+			if result == verifier.Success {
+				passedTests++
+			} else {
+				failedTests++
+			}
+		}
+	}
+
+	fmt.Printf("\nSummary: %d total tests, %d passed, %d failed\n", totalTests, passedTests, failedTests)
+
+	if failedTests == 0 {
+		output.WriteSuccess("All tests passed!")
+	} else {
+		output.WriteWarning("%d test(s) failed", failedTests)
+	}
 }
 
 // Cleanup cleans up all experiments in the Runner

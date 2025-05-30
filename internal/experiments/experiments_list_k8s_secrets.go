@@ -134,7 +134,7 @@ func (p *ListK8sSecretsConfig) Run(ctx context.Context, experimentConfig *Experi
 
 }
 
-func (p *ListK8sSecretsConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ListK8sSecretsConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	client, err := k8s.NewClient()
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (p *ListK8sSecretsConfig) Verify(ctx context.Context, experimentConfig *Exp
 	if err != nil {
 		return nil, err
 	}
-	v := verifier.New(
+	v := verifier.NewLegacy(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
