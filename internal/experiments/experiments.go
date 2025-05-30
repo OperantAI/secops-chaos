@@ -12,7 +12,7 @@ import (
 	"github.com/operantai/woodpecker/internal/verifier"
 )
 
-// Experiment interface - keeping it simple with legacy types for now
+// Experiment interface
 type Experiment interface {
 	// Type returns the type of the experiment
 	Type() string
