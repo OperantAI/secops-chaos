@@ -96,23 +96,25 @@ func (k *KubeExec) Run(ctx context.Context, experimentConfig *ExperimentConfig) 
 		return fmt.Errorf("Failed to write experiment results: %w", err)
 	}
 	return nil
-
 }
 
-func (k *KubeExec) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (k *KubeExec) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	var config KubeExec
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {
 		return nil, err
 	}
-	v := verifier.New(
+
+	// Use generic verifier for KubeExecResult
+	v := verifier.New[KubeExecResult](
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
 		config.Tactic(),
 		config.Technique(),
 	)
+
 	rawResults, err := getTempFileContentsForExperiment(k.Type(), config.Metadata.Name)
 	if err != nil {
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
@@ -123,19 +125,48 @@ func (k *KubeExec) Verify(ctx context.Context, experimentConfig *ExperimentConfi
 		if err := json.Unmarshal(rawResult, &result); err != nil {
 			return nil, fmt.Errorf("Could not parse experiment result: %w", err)
 		}
+
 		if len(result.Stderr) > 0 {
 			v.Fail(config.Metadata.Name)
-			continue
+		} else {
+			regex := regexp.MustCompile(config.Parameters.ExpectedOutputRegex)
+			if regex.MatchString(result.Stdout) {
+				v.Success(config.Metadata.Name)
+			} else {
+				v.Fail(config.Metadata.Name)
+			}
 		}
-		regex := regexp.MustCompile(config.Parameters.ExpectedOutputRegex)
-		if regex.MatchString(result.Stdout) {
-			v.Success(config.Metadata.Name)
-			continue
-		}
-		v.Fail(config.Metadata.Name)
+
+		// Store the strongly typed result
+		v.StoreResultOutputs(config.Metadata.Name, result)
 	}
 
-	return v.GetOutcome(), nil
+	// Convert to legacy format for backward compatibility
+	typedOutcome := v.GetOutcome()
+	legacyOutcome := &verifier.LegacyOutcome{
+		Experiment:    typedOutcome.Experiment,
+		Description:   typedOutcome.Description,
+		Framework:     typedOutcome.Framework,
+		Tactic:        typedOutcome.Tactic,
+		Technique:     typedOutcome.Technique,
+		Result:        typedOutcome.Result,
+		ResultOutputs: convertKubeExecToInterfaceMap(typedOutcome.ResultOutputs),
+	}
+
+	return legacyOutcome, nil
+}
+
+// Helper function to convert KubeExecResult to interface{} for legacy compatibility
+func convertKubeExecToInterfaceMap(typedResults map[string][]KubeExecResult) map[string][]interface{} {
+	result := make(map[string][]interface{})
+	for key, values := range typedResults {
+		interfaceSlice := make([]interface{}, len(values))
+		for i, value := range values {
+			interfaceSlice[i] = value
+		}
+		result[key] = interfaceSlice
+	}
+	return result
 }
 
 func (k *KubeExec) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {

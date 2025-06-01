@@ -161,7 +161,8 @@ func (p *LLMDataLeakageExperiment) Run(ctx context.Context, experimentConfig *Ex
 	return nil
 }
 
-func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+// Updated Verify method using generics - THIS IS THE KEY CHANGE
+func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	var config LLMDataLeakageExperiment
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -169,7 +170,8 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, experimentConfig 
 		return nil, err
 	}
 
-	v := verifier.New(
+	// Use the NEW AI-specific verifier with generics
+	v := verifier.NewAIVerifier(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
@@ -182,7 +184,6 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, experimentConfig 
 		return nil, fmt.Errorf("Could not fetch experiment results: %w", err)
 	}
 
-	var aiVerifierOutcome *verifier.AIVerifierOutcome
 	for _, rawResult := range rawResults {
 		var results map[string]ExecuteAIAPIResult
 		err = json.Unmarshal(rawResult, &results)
@@ -195,43 +196,81 @@ func (p *LLMDataLeakageExperiment) Verify(ctx context.Context, experimentConfig 
 			if !found {
 				continue
 			}
+
+			// Create properly typed AIVerifierOutcome
+			aiVerifierOutcome := verifier.AIVerifierOutcome{
+				Model:       result.Response.Model,
+				AIApi:       result.Response.AIApi,
+				Prompt:      result.Response.Prompt,
+				APIResponse: result.Response.APIResponse,
+				// Convert the API response types to verifier types
+				VerifiedPromptChecks:   convertToVerifierResults(result.Response.VerifiedPromptChecks),
+				VerifiedResponseChecks: convertToVerifierResults(result.Response.VerifiedResponseChecks),
+			}
+
 			fail := false
 			if api.ExpectedResponse.VerifiedResponseChecks != nil {
-				for _, responseCheck := range api.ExpectedResponse.VerifiedResponseChecks {
-					if result.Response.VerifiedResponseChecks != nil {
+				for range api.ExpectedResponse.VerifiedResponseChecks {
+					if len(aiVerifierOutcome.VerifiedResponseChecks) > 0 {
 						fail = true
 						v.Fail(api.Description)
-						if aiVerifierOutcome == nil {
-							aiVerifierOutcome = &verifier.AIVerifierOutcome{
-								Model:                  result.Response.Model,
-								AIApi:                  result.Response.AIApi,
-								Prompt:                 result.Response.Prompt,
-								APIResponse:            result.Response.APIResponse,
-								VerifiedResponseChecks: nil,
-							}
-						}
-						for _, resultCheck := range result.Response.VerifiedResponseChecks {
-							if resultCheck.Check == responseCheck.Check {
-								aiVerifierOutcome.VerifiedResponseChecks = append(aiVerifierOutcome.VerifiedResponseChecks, verifier.AIVerifierResult{
-									Check:      resultCheck.Check,
-									Detected:   resultCheck.Detected,
-									Score:      resultCheck.Score,
-									EntityType: resultCheck.EntityType,
-								})
-							}
-						}
-
+						break
 					}
 				}
 			}
 			if !fail {
 				v.Success(api.Description)
 			}
+
+			// Store the strongly typed result - NO MORE NULL FIELDS!
 			v.StoreResultOutputs(api.Description, aiVerifierOutcome)
 		}
 	}
 
-	return v.GetOutcome(), nil
+	// Convert to legacy format for backward compatibility
+	typedOutcome := v.GetOutcome()
+	legacyOutcome := &verifier.LegacyOutcome{
+		Experiment:    typedOutcome.Experiment,
+		Description:   typedOutcome.Description,
+		Framework:     typedOutcome.Framework,
+		Tactic:        typedOutcome.Tactic,
+		Technique:     typedOutcome.Technique,
+		Result:        typedOutcome.Result,
+		ResultOutputs: convertToInterfaceMap(typedOutcome.ResultOutputs),
+	}
+
+	return legacyOutcome, nil
+}
+
+// Helper function to convert typed results to interface{} for legacy compatibility
+func convertToInterfaceMap(typedResults map[string][]verifier.AIVerifierOutcome) map[string][]interface{} {
+	result := make(map[string][]interface{})
+	for key, values := range typedResults {
+		interfaceSlice := make([]interface{}, len(values))
+		for i, value := range values {
+			interfaceSlice[i] = value
+		}
+		result[key] = interfaceSlice
+	}
+	return result
+}
+
+// Convert API response types to verifier types
+func convertToVerifierResults(apiResults []AIVerifierResult) []verifier.AIVerifierResult {
+	if apiResults == nil {
+		return []verifier.AIVerifierResult{} // Return empty slice instead of nil
+	}
+
+	results := make([]verifier.AIVerifierResult, len(apiResults))
+	for i, apiResult := range apiResults {
+		results[i] = verifier.AIVerifierResult{
+			Check:      apiResult.Check,
+			Detected:   apiResult.Detected,
+			EntityType: apiResult.EntityType,
+			Score:      apiResult.Score,
+		}
+	}
+	return results
 }
 
 func (p *LLMDataLeakageExperiment) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {

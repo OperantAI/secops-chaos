@@ -148,7 +148,7 @@ func (p *ExecuteAPIExperimentConfig) Run(ctx context.Context, experimentConfig *
 	return nil
 }
 
-func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	var config ExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
@@ -156,7 +156,7 @@ func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfi
 		return nil, err
 	}
 
-	v := verifier.New(
+	v := verifier.NewLegacy(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
@@ -195,7 +195,7 @@ func (p *ExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfi
 }
 
 func (p *ExecuteAPIExperimentConfig) Cleanup(ctx context.Context, experimentConfig *ExperimentConfig) error {
-	var config RemoteExecuteAPIExperimentConfig
+	var config ExecuteAPIExperimentConfig
 	yamlObj, _ := yaml.Marshal(experimentConfig)
 	err := yaml.Unmarshal(yamlObj, &config)
 	if err != nil {

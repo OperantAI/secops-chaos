@@ -78,7 +78,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Run(ctx context.Context, experimentCo
 	return nil
 }
 
-func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.Outcome, error) {
+func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, experimentConfig *ExperimentConfig) (*verifier.LegacyOutcome, error) {
 	client, err := k8s.NewClient()
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (p *RemoteExecuteAPIExperimentConfig) Verify(ctx context.Context, experimen
 		Path:   path,
 	}
 
-	v := verifier.New(
+	v := verifier.NewLegacy(
 		config.Metadata.Name,
 		config.Description(),
 		config.Framework(),
